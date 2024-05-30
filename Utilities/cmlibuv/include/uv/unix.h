@@ -36,12 +36,9 @@
 #include <termios.h>
 #include <pwd.h>
 
-#if !defined(__MVS__) && !defined(__amigaos4__)
+#if !defined(__MVS__)
 #include <semaphore.h>
 #include <sys/param.h> /* MAXHOSTNAMELEN on Linux and the BSDs */
-#endif
-#ifdef __amigaos4__
-#include <netdb.h>
 #endif
 #include <pthread.h>
 #include <signal.h>
@@ -155,9 +152,7 @@ typedef pthread_once_t uv_once_t;
 typedef pthread_t uv_thread_t;
 typedef pthread_mutex_t uv_mutex_t;
 typedef pthread_rwlock_t uv_rwlock_t;
-#ifndef __amigaos4__
 typedef UV_PLATFORM_SEM_T uv_sem_t;
-#endif
 typedef pthread_cond_t uv_cond_t;
 typedef pthread_key_t uv_key_t;
 
@@ -295,17 +290,6 @@ typedef struct {
 
 #define UV_SHUTDOWN_PRIVATE_FIELDS /* empty */
 
-#ifdef __amigaos4__
-#define UV_UDP_SEND_PRIVATE_FIELDS                                            \
-  void* queue[2];                                                             \
-  struct sockaddr_in addr;                                                \
-  unsigned int nbufs;                                                         \
-  uv_buf_t* bufs;                                                             \
-  ssize_t status;                                                             \
-  uv_udp_send_cb send_cb;                                                     \
-  uv_buf_t bufsml[4];                                                         \
-
-#else
 #define UV_UDP_SEND_PRIVATE_FIELDS                                            \
   void* queue[2];                                                             \
   struct sockaddr_storage addr;                                               \
@@ -314,8 +298,6 @@ typedef struct {
   ssize_t status;                                                             \
   uv_udp_send_cb send_cb;                                                     \
   uv_buf_t bufsml[4];                                                         \
-
-#endif
 
 #define UV_HANDLE_PRIVATE_FIELDS                                              \
   uv_handle_t* next_closing;                                                  \
@@ -381,17 +363,6 @@ typedef struct {
   struct addrinfo* addrinfo;                                                  \
   int retcode;
 
-#ifdef __amigaos4__
-#define UV_GETNAMEINFO_PRIVATE_FIELDS                                         \
-  struct uv__work work_req;                                                   \
-  uv_getnameinfo_cb getnameinfo_cb;                                           \
-  struct sockaddr_in storage;                                            \
-  int flags;                                                                  \
-  char host[NI_MAXHOST];                                                      \
-  char service[NI_MAXSERV];                                                   \
-  int retcode;
-
-#else
 #define UV_GETNAMEINFO_PRIVATE_FIELDS                                         \
   struct uv__work work_req;                                                   \
   uv_getnameinfo_cb getnameinfo_cb;                                           \
@@ -400,8 +371,6 @@ typedef struct {
   char host[NI_MAXHOST];                                                      \
   char service[NI_MAXSERV];                                                   \
   int retcode;
-
-#endif
 
 #define UV_PROCESS_PRIVATE_FIELDS                                             \
   void* queue[2];                                                             \

@@ -31,17 +31,9 @@ int cmGetPipes(int* fds)
 
 #  include <unistd.h>
 
-#ifdef __amigaos4__
-extern "C" int amiga_pipe(int *);
-#endif
-
 int cmGetPipes(int* fds)
 {
-#ifdef __amigaos4__
-  if (amiga_pipe(fds) == -1) {
-#else
   if (pipe(fds) == -1) {
-#endif
     return uv_translate_sys_error(errno);
   }
 

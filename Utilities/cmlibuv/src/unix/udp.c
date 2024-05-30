@@ -30,9 +30,7 @@
 #if defined(__MVS__)
 #include <xti.h>
 #endif
-#ifndef __amigaos4__
 #include <sys/un.h>
-#endif
 
 #if defined(IPV6_JOIN_GROUP) && !defined(IPV6_ADD_MEMBERSHIP)
 # define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
@@ -254,11 +252,7 @@ static int uv__udp_recvmmsg(uv_udp_t* handle, uv_buf_t* buf) {
 #endif
 
 static void uv__udp_recvmsg(uv_udp_t* handle) {
-#ifdef __amigaos4__
-  struct sockaddr_in peer;
-#else
   struct sockaddr_storage peer;
-#endif
   struct msghdr h;
   ssize_t nread;
   uv_buf_t buf;
@@ -441,26 +435,20 @@ static void uv__udp_sendmsg(uv_udp_t* handle) {
     assert(req != NULL);
 
     memset(&h, 0, sizeof h);
-#ifdef __amigaos4__
-    if (req->addr.sin_family == AF_UNSPEC) {
-#else
     if (req->addr.ss_family == AF_UNSPEC) {
-#endif
       h.msg_name = NULL;
       h.msg_namelen = 0;
     } else {
       h.msg_name = &req->addr;
-#ifdef __amigaos4__
-      if (req->addr.sin_family == AF_INET)
-        h.msg_namelen = sizeof(struct sockaddr_in);
-#else
+#ifndef __amigaos4__
       if (req->addr.ss_family == AF_INET6)
         h.msg_namelen = sizeof(struct sockaddr_in6);
-      else if (req->addr.ss_family == AF_INET)
+      else
+#endif
+      if (req->addr.ss_family == AF_INET)
         h.msg_namelen = sizeof(struct sockaddr_in);
       else if (req->addr.ss_family == AF_UNIX)
         h.msg_namelen = sizeof(struct sockaddr_un);
-#endif
       else {
         assert(0 && "unsupported address family");
         abort();
@@ -785,11 +773,7 @@ int uv__udp_send(uv_udp_send_t* req,
   uv__req_init(handle->loop, req, UV_UDP_SEND);
   assert(addrlen <= sizeof(req->addr));
   if (addr == NULL)
-#ifdef __amigaos4__
-    req->addr.sin_family = AF_UNSPEC;
-#else
     req->addr.ss_family = AF_UNSPEC;
-#endif
   else
     memcpy(&req->addr, addr, addrlen);
   req->send_cb = send_cb;
@@ -1267,10 +1251,6 @@ int uv_udp_set_ttl(uv_udp_t* handle, int ttl) {
   if (ttl < 1 || ttl > 255)
     return UV_EINVAL;
 
-#ifdef __amigaos4__
-  return ENOSYS;
-#else
-
 #if defined(__MVS__)
   if (!(handle->flags & UV_HANDLE_IPV6))
     return UV_ENOTSUP;  /* zOS does not support setting ttl for IPv4 */
@@ -1302,15 +1282,10 @@ int uv_udp_set_ttl(uv_udp_t* handle, int ttl) {
 #endif /* defined(__sun) || defined(_AIX) || defined (__OpenBSD__) ||
           defined(__MVS__) || defined(__QNX__) */
 
-#endif //__amigaos4__
 }
 
 
 int uv_udp_set_multicast_ttl(uv_udp_t* handle, int ttl) {
-#ifdef __amigaos4__
-  return ENOSYS;
-#else
-
 /*
  * On Solaris and derivatives such as SmartOS, the length of socket options
  * is sizeof(int) for IPV6_MULTICAST_HOPS and sizeof(char) for
@@ -1332,14 +1307,10 @@ int uv_udp_set_multicast_ttl(uv_udp_t* handle, int ttl) {
                                    IP_MULTICAST_TTL,
                                    IPV6_MULTICAST_HOPS,
                                    ttl);
-#endif //__amigaos4__
 }
 
 
 int uv_udp_set_multicast_loop(uv_udp_t* handle, int on) {
-#ifdef __amigaos4__
-  return ENOSYS;
-#else
 /*
  * On Solaris and derivatives such as SmartOS, the length of socket options
  * is sizeof(int) for IPV6_MULTICAST_LOOP and sizeof(char) for
@@ -1361,15 +1332,10 @@ int uv_udp_set_multicast_loop(uv_udp_t* handle, int on) {
                                    IP_MULTICAST_LOOP,
                                    IPV6_MULTICAST_LOOP,
                                    on);
-#endif //__amigaos4__
 }
 
 int uv_udp_set_multicast_interface(uv_udp_t* handle, const char* interface_addr) {
-#ifdef __amigaos4__
-  struct sockaddr_in addr_st;
-#else
   struct sockaddr_storage addr_st;
-#endif
   struct sockaddr_in* addr4;
 #ifndef __amigaos4__
   struct sockaddr_in6* addr6;
@@ -1382,18 +1348,16 @@ int uv_udp_set_multicast_interface(uv_udp_t* handle, const char* interface_addr)
 
   if (!interface_addr) {
     memset(&addr_st, 0, sizeof addr_st);
-#ifdef __amigaos4__
-      addr_st.sin_family = AF_INET;
-      addr4->sin_addr.s_addr = htonl(INADDR_ANY);
-#else
+#ifndef __amigaos4__
     if (handle->flags & UV_HANDLE_IPV6) {
       addr_st.ss_family = AF_INET6;
       addr6->sin6_scope_id = 0;
-    } else {
+    } else
+#endif
+    {
       addr_st.ss_family = AF_INET;
       addr4->sin_addr.s_addr = htonl(INADDR_ANY);
     }
-#endif
   } else if (uv_ip4_addr(interface_addr, 0, addr4) == 0) {
     /* nothing, address was parsed */
 #ifndef __amigaos4__
@@ -1404,11 +1368,7 @@ int uv_udp_set_multicast_interface(uv_udp_t* handle, const char* interface_addr)
     return UV_EINVAL;
   }
 
-#ifdef __amigaos4__
-  if (addr_st.sin_family == AF_INET) {
-#else
   if (addr_st.ss_family == AF_INET) {
-#endif
     if (setsockopt(handle->io_watcher.fd,
                    IPPROTO_IP,
                    IP_MULTICAST_IF,

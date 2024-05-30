@@ -73,6 +73,7 @@
 #define DOS_FILESYSTEM 1
 #elif defined(__amigaos4__)
 #define AMIGA_FILESYSTEM 1
+int __unix_path_semantics = 1; //for cmake
 #endif
 
 #ifdef OPEN_NEEDS_ARG3

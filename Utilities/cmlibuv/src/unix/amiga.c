@@ -12,4 +12,4 @@ int uv__io_fork(uv_loop_t* loop) {
 }
 int uv__io_check_fd(uv_loop_t* loop, int fd) { }
 
-int fileno(FILE *stream) { return ((stream)->_file); }
+//int fileno(FILE *stream) { return ((stream)->_file); }

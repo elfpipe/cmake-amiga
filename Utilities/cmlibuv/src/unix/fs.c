@@ -1492,7 +1492,8 @@ static void uv__to_stat(struct stat* src, uv_stat_t* dst) {
   dst->st_flags = 0;
   dst->st_gen = 0;
 #elif !defined(_AIX) &&         \
-    !defined(__MVS__) && (      \
+    !defined(__MVS__) &&        \
+    !defined(__amigaos4__) && (      \
     defined(__DragonFly__)   || \
     defined(__FreeBSD__)     || \
     defined(__OpenBSD__)     || \

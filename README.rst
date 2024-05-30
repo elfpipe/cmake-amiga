@@ -1,6 +1,11 @@
 CMake
 *****
 
+AmigaOS4.1
+==========
+
+This is an attempt to port cmake to AmigaOS4.
+
 Introduction
 ============
 

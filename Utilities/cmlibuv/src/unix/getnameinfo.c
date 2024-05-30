@@ -35,12 +35,9 @@ static void uv__getnameinfo_work(struct uv__work* w) {
 
   req = container_of(w, uv_getnameinfo_t, work_req);
 
-#ifdef __amigaos4__
-  if (req->storage.sin_family == AF_INET)
-    salen = sizeof(struct sockaddr_in);
-#else
   if (req->storage.ss_family == AF_INET)
     salen = sizeof(struct sockaddr_in);
+#ifndef __amigaos4__
   else if (req->storage.ss_family == AF_INET6)
     salen = sizeof(struct sockaddr_in6);
 #endif

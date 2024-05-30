@@ -29,9 +29,6 @@
 #include <sys/time.h>
 #include <sys/resource.h>  /* getrlimit() */
 #include <unistd.h>  /* getpagesize() */
-#ifdef __amigaos4__
-int getpagesize() { return 4096; }
-#endif
 #include <limits.h>
 
 #ifdef __MVS__
@@ -46,7 +43,7 @@ int getpagesize() { return 4096; }
 #undef NANOSEC
 #define NANOSEC ((uint64_t) 1e9)
 
-#if defined(PTHREAD_BARRIER_SERIAL_THREAD)
+#if defined(PTHREAD_BARRIER_SERIAL_THREAD) && !defined(__amigaos4__)
 STATIC_ASSERT(sizeof(uv_barrier_t) == sizeof(pthread_barrier_t));
 #endif
 

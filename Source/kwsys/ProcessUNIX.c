@@ -71,53 +71,56 @@ do.
 #include <unistd.h>    /* pipe, close, fork, execvp, select, _exit */
 
 #ifdef __amigaos4__
-//--- amiga pipe funtionality
-
-#include <proto/exec.h>
 #include <proto/dos.h>
-
-int amiga_pipe(BPTR fd[2], int noblock)
-{
-	struct ExamineData *data;
-	char filename[120] = "";
-	int ret=0;
-
-	fd[1] = IDOS->Open ("PIPE:/UNIQUE/NOBLOCK", MODE_NEWFILE);
-	if (fd[1] == 0)
-	{
-		printf("DOS couldn't open PIPE:/UNIQUE\n");
-		return(-1);
-	}
-	data = IDOS->ExamineObjectTags(EX_FileHandleInput, fd[1], TAG_END);
-	if (data == NULL)
-	{
-		IDOS->PrintFault(IDOS->IoErr(),NULL); /* failure - why ? */
-		IDOS->Close(fd[1]);
-		return(-1);
-	}
-
-	strlcpy(filename, "PIPE:", sizeof(filename));
-	strlcat(filename, data->Name, sizeof(filename));
-	IDOS->FreeDosObject(DOS_EXAMINEDATA, data);
-
-	if (noblock)
-		strlcat(filename, "/NOBLOCK", sizeof(filename));
-
-	fd[0] = IDOS->Open (filename, MODE_OLDFILE);
-	if (fd[0] == 0)
-	{
-		printf("DOS couldn't open %s\n", filename);
-		return(-1);
-	}
-	return (0);
-}
-
-void amiga_closepipe(BPTR fd[2])
-{
-	IDOS->Close(fd[0]);
-	IDOS->Close(fd[1]);
-}
 #endif
+// #ifdef __amigaos4__
+// //--- amiga pipe funtionality
+
+// #include <proto/exec.h>
+// #include <proto/dos.h>
+
+// int amiga_pipe(BPTR fd[2], int noblock)
+// {
+// 	struct ExamineData *data;
+// 	char filename[120] = "";
+// 	int ret=0;
+
+// 	fd[1] = IDOS->Open ("PIPE:/UNIQUE/NOBLOCK", MODE_NEWFILE);
+// 	if (fd[1] == 0)
+// 	{
+// 		printf("DOS couldn't open PIPE:/UNIQUE\n");
+// 		return(-1);
+// 	}
+// 	data = IDOS->ExamineObjectTags(EX_FileHandleInput, fd[1], TAG_END);
+// 	if (data == NULL)
+// 	{
+// 		IDOS->PrintFault(IDOS->IoErr(),NULL); /* failure - why ? */
+// 		IDOS->Close(fd[1]);
+// 		return(-1);
+// 	}
+
+// 	strlcpy(filename, "PIPE:", sizeof(filename));
+// 	strlcat(filename, data->Name, sizeof(filename));
+// 	IDOS->FreeDosObject(DOS_EXAMINEDATA, data);
+
+// 	if (noblock)
+// 		strlcat(filename, "/NOBLOCK", sizeof(filename));
+
+// 	fd[0] = IDOS->Open (filename, MODE_OLDFILE);
+// 	if (fd[0] == 0)
+// 	{
+// 		printf("DOS couldn't open %s\n", filename);
+// 		return(-1);
+// 	}
+// 	return (0);
+// }
+
+// void amiga_closepipe(BPTR fd[2])
+// {
+// 	IDOS->Close(fd[0]);
+// 	IDOS->Close(fd[1]);
+// }
+// #endif
 
 #if defined(__VMS)
 #  define KWSYSPE_VMS_NONBLOCK , O_NONBLOCK
@@ -196,15 +199,15 @@ struct kwsysProcessTime_s
   long tv_usec;
 };
 
-#ifdef __amigaos4__
-typedef struct kwsysProcessCreateInformation_s
-{
-  BPTR StdIn;
-  BPTR StdOut;
-  BPTR StdErr;
-  //int ErrorPipe[2];
-} kwsysProcessCreateInformation;
-#else
+// #ifdef __amigaos4__
+// typedef struct kwsysProcessCreateInformation_s
+// {
+//   BPTR StdIn;
+//   BPTR StdOut;
+//   BPTR StdErr;
+//   //int ErrorPipe[2];
+// } kwsysProcessCreateInformation;
+// #else
 typedef struct kwsysProcessCreateInformation_s
 {
   int StdIn;
@@ -212,34 +215,34 @@ typedef struct kwsysProcessCreateInformation_s
   int StdErr;
   int ErrorPipe[2];
 } kwsysProcessCreateInformation;
-#endif
+// #endif
 
 static void kwsysProcessVolatileFree(volatile void* p);
 static int kwsysProcessInitialize(kwsysProcess* cp);
 static void kwsysProcessCleanup(kwsysProcess* cp, int error);
-#ifdef __amigaos4__
-static void kwsysProcessCleanupDescriptor(BPTR* pfd);
-#else
+// #ifdef __amigaos4__
+// static void kwsysProcessCleanupDescriptor(BPTR* pfd);
+// #else
 static void kwsysProcessCleanupDescriptor(int* pfd);
-#endif
+// #endif
 static void kwsysProcessClosePipes(kwsysProcess* cp);
-#ifdef __amigaos4__
-static int kwsysProcessSetNonBlocking(BPTR fd);
-static int kwsysProcessCreate(kwsysProcess* cp, int prIndex,
-                              kwsysProcessCreateInformation* si, BPTR *readEnd);
-#else
+// #ifdef __amigaos4__
+// static int kwsysProcessSetNonBlocking(BPTR fd);
+// static int kwsysProcessCreate(kwsysProcess* cp, int prIndex,
+//                               kwsysProcessCreateInformation* si, BPTR *readEnd);
+// #else
 static int kwsysProcessSetNonBlocking(int fd);
 static int kwsysProcessCreate(kwsysProcess* cp, int prIndex,
                               kwsysProcessCreateInformation* si);
-#endif
+//#endif
 static void kwsysProcessDestroy(kwsysProcess* cp);
-#ifdef __amigaos4__
-static int kwsysProcessSetupOutputPipeFile(BPTR* p, const char* name);
-static int kwsysProcessSetupOutputPipeNative(BPTR* p, BPTR des[2]);
-#else
+// #ifdef __amigaos4__
+// static int kwsysProcessSetupOutputPipeFile(BPTR* p, const char* name);
+// static int kwsysProcessSetupOutputPipeNative(BPTR* p, BPTR des[2]);
+// #else
 static int kwsysProcessSetupOutputPipeFile(int* p, const char* name);
 static int kwsysProcessSetupOutputPipeNative(int* p, int des[2]);
-#endif
+// #endif
 static int kwsysProcessGetTimeoutTime(kwsysProcess* cp,
                                       const double* userTimeout,
                                       kwsysProcessTime* timeoutTime);
@@ -305,22 +308,22 @@ struct kwsysProcess_s
   char*** Commands;
   volatile int NumberOfCommands;
 
-#ifdef __amigaos4__
-  /* Descriptors for the read ends of the child's output pipes and
-     the signal pipe. */
-  BPTR PipeReadEnds[KWSYSPE_PIPE_COUNT];
+// #ifdef __amigaos4__
+//   /* Descriptors for the read ends of the child's output pipes and
+//      the signal pipe. */
+//   BPTR PipeReadEnds[KWSYSPE_PIPE_COUNT];
 
-  /* Write descriptor for child termination signal pipe.  */
-  BPTR SignalPipe;
+//   /* Write descriptor for child termination signal pipe.  */
+//   BPTR SignalPipe;
 
-  /* Buffer for pipe data.  */
-  char PipeBuffer[KWSYSPE_PIPE_BUFFER_SIZE];
+//   /* Buffer for pipe data.  */
+//   char PipeBuffer[KWSYSPE_PIPE_BUFFER_SIZE];
 
-  /* Process IDs returned by the calls to fork.  */
-  //pid_t* ForkPIDs;
+//   /* Process IDs returned by the calls to fork.  */
+//   //pid_t* ForkPIDs;
 	struct Process **ForkPIDs;
 
-#else
+// #else
 
   /* Descriptors for the read ends of the child's output pipes and
      the signal pipe. */
@@ -339,9 +342,9 @@ struct kwsysProcess_s
   /* Process IDs returned by the calls to fork.  Everything is volatile
      because the signal handler accesses them.  You must be very careful
      when reaping PIDs or modifying this array to avoid race conditions.  */
-  volatile pid_t* volatile ForkPIDs;
+  // volatile pid_t* volatile ForkPIDs;
 
-#endif
+// #endif
 
   /* Flag for whether the children were terminated by a failed select.  */
   int SelectError;
@@ -361,13 +364,13 @@ struct kwsysProcess_s
   /* Whether to treat command lines as verbatim.  */
   int Verbatim;
 
-#ifndef __amigaos4__
+// #ifndef __amigaos4__
   /* Whether to merge stdout/stderr of the child.  */
   int MergeOutput;
 
   /* Whether to create the process in a new process group.  */
   volatile sig_atomic_t CreateProcessGroup;
-#endif
+// #endif
 
   /* Time at which the child started.  Negative for no timeout.  */
   kwsysProcessTime StartTime;
@@ -389,11 +392,11 @@ struct kwsysProcess_s
   /* The number of children still executing.  */
   int CommandsLeft;
 
-#ifdef __amigaos4__
-  int State;
+// #ifdef __amigaos4__
+//   int State;
 
-  int Killed;
-#else
+//   int Killed;
+// #else
   /* The status of the process structure.  Must be atomic because
      the signal handler checks this to avoid a race.  */
 
@@ -401,7 +404,7 @@ struct kwsysProcess_s
 
   /* Whether the process was killed.  */
   volatile sig_atomic_t Killed;
-#endif
+// #endif
 
   /* Buffer for error message in case of failure.  */
   char ErrorMessage[KWSYSPE_PIPE_BUFFER_SIZE + 1];
@@ -423,15 +426,15 @@ struct kwsysProcess_s
   int PipeSharedSTDERR;
 
   /* Native pipes provided by the user.  */
-#ifdef __amigaos4__
-  BPTR PipeNativeSTDIN[2];
-  BPTR PipeNativeSTDOUT[2];
-  BPTR PipeNativeSTDERR[2];
-#else
+// #ifdef __amigaos4__
+//   BPTR PipeNativeSTDIN[2];
+//   BPTR PipeNativeSTDOUT[2];
+//   BPTR PipeNativeSTDERR[2];
+// #else
   int PipeNativeSTDIN[2];
   int PipeNativeSTDOUT[2];
   int PipeNativeSTDERR[2];
-#endif
+// #endif
 
   /* The real working directory of this process.  */
   int RealWorkingDirectoryLength;
@@ -702,15 +705,15 @@ void kwsysProcess_SetPipeShared(kwsysProcess* cp, int prPipe, int shared)
   }
 }
 
-#ifdef __amigaos4__
-void kwsysProcess_SetPipeNative(kwsysProcess* cp, int prPipe, const kwsysProcess_Pipe_Handle p[2])
-{
-  BPTR* pPipeNative = 0;
-#else
+// #ifdef __amigaos4__
+// void kwsysProcess_SetPipeNative(kwsysProcess* cp, int prPipe, const kwsysProcess_Pipe_Handle p[2])
+// {
+//   BPTR* pPipeNative = 0;
+// #else
 void kwsysProcess_SetPipeNative(kwsysProcess* cp, int prPipe, const int p[2])
 {
   int* pPipeNative = 0;
-#endif
+// #endif
 
   if (!cp) {
     return;
@@ -955,7 +958,7 @@ void kwsysProcess_Execute(kwsysProcess* cp)
     }
   }
 
-#ifndef __amigaos4__
+// #ifndef __amigaos4__
 
   /* Setup the stdin pipe for the first process.  */
   if (cp->PipeFileSTDIN) {
@@ -1038,61 +1041,61 @@ void kwsysProcess_Execute(kwsysProcess* cp)
       return;
     }
   }
-#endif
+// #endif
 
-#ifdef __amigaos4__
-  /* Setup the stderr pipe to be shared by all processes.  */
-  {
-  /* Create the pipe.  */
-  BPTR p[2];
-  if(amiga_pipe(p, 0) < 0)
-    {
-    kwsysProcessCleanup(cp, 1);
-    return;
-    }
+// #ifdef __amigaos4__
+//   /* Setup the stderr pipe to be shared by all processes.  */
+//   {
+//   /* Create the pipe.  */
+//   BPTR p[2];
+//   if(amiga_pipe(p, 0) < 0)
+//     {
+//     kwsysProcessCleanup(cp, 1);
+//     return;
+//     }
     
-  /* Store the pipe.  */
-  cp->PipeReadEnds[KWSYSPE_PIPE_STDERR] = p[0];
-  si.StdErr = p[1];
-  }
+//   /* Store the pipe.  */
+//   cp->PipeReadEnds[KWSYSPE_PIPE_STDERR] = p[0];
+//   si.StdErr = p[1];
+//   }
 
 
-  /* Replace the stderr pipe with a file if requested.  In this case
-     the select call will report that stderr is closed immediately.  */
-  if(cp->PipeFileSTDERR)
-    {
-    if(!kwsysProcessSetupOutputPipeFile(&si.StdErr, cp->PipeFileSTDERR))
-      {
-      kwsysProcessCleanup(cp, 1);
-      kwsysProcessCleanupDescriptor(&si.StdErr);
-      return;
-      }
-    }
+//   /* Replace the stderr pipe with a file if requested.  In this case
+//      the select call will report that stderr is closed immediately.  */
+//   if(cp->PipeFileSTDERR)
+//     {
+//     if(!kwsysProcessSetupOutputPipeFile(&si.StdErr, cp->PipeFileSTDERR))
+//       {
+//       kwsysProcessCleanup(cp, 1);
+//       kwsysProcessCleanupDescriptor(&si.StdErr);
+//       return;
+//       }
+//     }
 
-  /* Replace the stderr pipe with the parent's if requested.  In this
-     case the select call will report that stderr is closed
-     immediately.  */
-  if(cp->PipeSharedSTDERR)
-    {
-    kwsysProcessCleanupDescriptor(&si.StdErr);
-    //si.StdErr = 2;
-	si.StdErr = IDOS->ErrorOutput();
-    }
+//   /* Replace the stderr pipe with the parent's if requested.  In this
+//      case the select call will report that stderr is closed
+//      immediately.  */
+//   if(cp->PipeSharedSTDERR)
+//     {
+//     kwsysProcessCleanupDescriptor(&si.StdErr);
+//     //si.StdErr = 2;
+// 	si.StdErr = IDOS->ErrorOutput();
+//     }
 
-  /* Replace the stderr pipe with the native pipe provided if any.  In
-     this case the select call will report that stderr is closed
-     immediately.  */
-  if(cp->PipeNativeSTDERR[1] > 0)
-    {
-    if(!kwsysProcessSetupOutputPipeNative(&si.StdErr, cp->PipeNativeSTDERR))
-      {
-      kwsysProcessCleanup(cp, 1);
-      kwsysProcessCleanupDescriptor(&si.StdErr);
-      return;
-      }
-    }
+//   /* Replace the stderr pipe with the native pipe provided if any.  In
+//      this case the select call will report that stderr is closed
+//      immediately.  */
+//   if(cp->PipeNativeSTDERR[1] > 0)
+//     {
+//     if(!kwsysProcessSetupOutputPipeNative(&si.StdErr, cp->PipeNativeSTDERR))
+//       {
+//       kwsysProcessCleanup(cp, 1);
+//       kwsysProcessCleanupDescriptor(&si.StdErr);
+//       return;
+//       }
+//     }
 
-#else
+// #else
 
   /* Create stderr pipe to be shared by all processes in the pipeline.
      We always create this so the pipe can be passed to select even if
@@ -1143,58 +1146,58 @@ void kwsysProcess_Execute(kwsysProcess* cp)
       return;
     }
   }
-#endif
+// #endif
 
   /* The timeout period starts now.  */
   cp->StartTime = kwsysProcessTimeGetCurrent();
   cp->TimeoutTime.tv_sec = -1;
   cp->TimeoutTime.tv_usec = -1;
 
-#ifdef __amigaos4__
-  /* Create the pipeline of processes.  */
-  {
-  BPTR readEnd = 0;
-  int failed = 0;
-  for(i=0; i < cp->NumberOfCommands; ++i)
-    {
-    if(!kwsysProcessCreate(cp, i, &si, &readEnd))
-      {
-      failed = 1;
-      }
+// #ifdef __amigaos4__
+//   /* Create the pipeline of processes.  */
+//   {
+//   BPTR readEnd = 0;
+//   int failed = 0;
+//   for(i=0; i < cp->NumberOfCommands; ++i)
+//     {
+//     if(!kwsysProcessCreate(cp, i, &si, &readEnd))
+//       {
+//       failed = 1;
+//       }
 
-    /* Set the output pipe of the last process to be non-blocking in
-       case select lies, or for the polling implementation.  */
-    if(i == (cp->NumberOfCommands-1) && !kwsysProcessSetNonBlocking(readEnd))
-      {
-      failed = 1;
-      }
+//     /* Set the output pipe of the last process to be non-blocking in
+//        case select lies, or for the polling implementation.  */
+//     if(i == (cp->NumberOfCommands-1) && !kwsysProcessSetNonBlocking(readEnd))
+//       {
+//       failed = 1;
+//       }
 
-    if(failed)
-      {
-      kwsysProcessCleanup(cp, 1);
+//     if(failed)
+//       {
+//       kwsysProcessCleanup(cp, 1);
 
-      /* Release resources that may have been allocated for this
-         process before an error occurred.  */
-      kwsysProcessCleanupDescriptor(&readEnd);
-      if(si.StdIn != IDOS->Input())
-        {
-        kwsysProcessCleanupDescriptor(&si.StdIn);
-        }
-      if(si.StdOut != IDOS->Output())
-        {
-        kwsysProcessCleanupDescriptor(&si.StdOut);
-        }
-      if(si.StdErr != IDOS->ErrorOutput())
-        {
-        kwsysProcessCleanupDescriptor(&si.StdErr);
-        }
-	return;
-      }
-    }
-  /* Save a handle to the output pipe for the last process.  */
-  cp->PipeReadEnds[KWSYSPE_PIPE_STDOUT] = readEnd;
-  }
-#else
+//       /* Release resources that may have been allocated for this
+//          process before an error occurred.  */
+//       kwsysProcessCleanupDescriptor(&readEnd);
+//       if(si.StdIn != IDOS->Input())
+//         {
+//         kwsysProcessCleanupDescriptor(&si.StdIn);
+//         }
+//       if(si.StdOut != IDOS->Output())
+//         {
+//         kwsysProcessCleanupDescriptor(&si.StdOut);
+//         }
+//       if(si.StdErr != IDOS->ErrorOutput())
+//         {
+//         kwsysProcessCleanupDescriptor(&si.StdErr);
+//         }
+// 	return;
+//       }
+//     }
+//   /* Save a handle to the output pipe for the last process.  */
+//   cp->PipeReadEnds[KWSYSPE_PIPE_STDOUT] = readEnd;
+//   }
+// #else
 
   /* Create the pipeline of processes.  */
   {
@@ -1264,7 +1267,7 @@ void kwsysProcess_Execute(kwsysProcess* cp)
   for (i = 0; i < 3; ++i) {
     kwsysProcessCleanupDescriptor(&cp->PipeChildStd[i]);
   }
-#endif
+// #endif
 
   /* Restore the working directory. */
   if (cp->RealWorkingDirectory) {
@@ -1377,96 +1380,96 @@ int kwsysProcess_WaitForData(kwsysProcess* cp, char** data, int* length,
 static int kwsysProcessWaitForPipe(kwsysProcess* cp, char** data, int* length,
                                    kwsysProcessWaitData* wd)
 {
-#ifdef __amigaos4__
-  int i, error = 0;
-  kwsysProcessTimeNative timeoutLength;
+// #ifdef __amigaos4__
+//   int i, error = 0;
+//   kwsysProcessTimeNative timeoutLength;
 
 
-  /* Poll pipes for data since we do not have select.  */
-  for(i=0; i < KWSYSPE_PIPE_COUNT; ++i)
-    {
-    if(cp->PipeReadEnds[i] > 0)
-      {
-      const BPTR fd = cp->PipeReadEnds[i];
-      //int n = read(fd, cp->PipeBuffer, KWSYSPE_PIPE_BUFFER_SIZE);
-	  int n = IDOS->Read(fd, cp->PipeBuffer, KWSYSPE_PIPE_BUFFER_SIZE);
-	  if (n < 0)
-		error = IDOS->IoErr();
+//   /* Poll pipes for data since we do not have select.  */
+//   for(i=0; i < KWSYSPE_PIPE_COUNT; ++i)
+//     {
+//     if(cp->PipeReadEnds[i] > 0)
+//       {
+//       const BPTR fd = cp->PipeReadEnds[i];
+//       //int n = read(fd, cp->PipeBuffer, KWSYSPE_PIPE_BUFFER_SIZE);
+// 	  int n = IDOS->Read(fd, cp->PipeBuffer, KWSYSPE_PIPE_BUFFER_SIZE);
+// 	  if (n < 0)
+// 		error = IDOS->IoErr();
 
-      if(n > 0)
-        {
-        /* We have data on this pipe.  */
-        if(i == KWSYSPE_PIPE_SIGNAL)
-          {
-          /* A child process has terminated.  */
-          kwsysProcessDestroy(cp);
-          }
-        else if(data && length)
-          {
-          /* Report this data.  */
-          *data = cp->PipeBuffer;
-          *length = n;
-          switch(i)
-            {
-            case KWSYSPE_PIPE_STDOUT:
-              wd->PipeId = kwsysProcess_Pipe_STDOUT; break;
-            case KWSYSPE_PIPE_STDERR:
-              wd->PipeId = kwsysProcess_Pipe_STDERR; break;
-            };
-          }
-        return 1;
-        }
-      else if (n == 0 || (n == -1 && error == 308) )  /* EOF or ERROR_WOULD_BLOCK */
-        {
-        /* We are done reading from this pipe.  */
-          {
-          kwsysProcessCleanupDescriptor(&cp->PipeReadEnds[i]);
-          --cp->PipesLeft;
-          }
-        }
-      else if (n < 0)  /* error */
-        {
-        if((errno != EINTR) && (errno != EAGAIN))
-          {
-          strncpy(cp->ErrorMessage,strerror(errno),
-                  KWSYSPE_PIPE_BUFFER_SIZE);
-          /* Kill the children now.  */
-          kwsysProcess_Kill(cp);
-          cp->Killed = 0;
-          cp->SelectError = 1;
-          return 1;
-          }
-        }
-      }
-    }
+//       if(n > 0)
+//         {
+//         /* We have data on this pipe.  */
+//         if(i == KWSYSPE_PIPE_SIGNAL)
+//           {
+//           /* A child process has terminated.  */
+//           kwsysProcessDestroy(cp);
+//           }
+//         else if(data && length)
+//           {
+//           /* Report this data.  */
+//           *data = cp->PipeBuffer;
+//           *length = n;
+//           switch(i)
+//             {
+//             case KWSYSPE_PIPE_STDOUT:
+//               wd->PipeId = kwsysProcess_Pipe_STDOUT; break;
+//             case KWSYSPE_PIPE_STDERR:
+//               wd->PipeId = kwsysProcess_Pipe_STDERR; break;
+//             };
+//           }
+//         return 1;
+//         }
+//       else if (n == 0 || (n == -1 && error == 308) )  /* EOF or ERROR_WOULD_BLOCK */
+//         {
+//         /* We are done reading from this pipe.  */
+//           {
+//           kwsysProcessCleanupDescriptor(&cp->PipeReadEnds[i]);
+//           --cp->PipesLeft;
+//           }
+//         }
+//       else if (n < 0)  /* error */
+//         {
+//         if((errno != EINTR) && (errno != EAGAIN))
+//           {
+//           strncpy(cp->ErrorMessage,strerror(errno),
+//                   KWSYSPE_PIPE_BUFFER_SIZE);
+//           /* Kill the children now.  */
+//           kwsysProcess_Kill(cp);
+//           cp->Killed = 0;
+//           cp->SelectError = 1;
+//           return 1;
+//           }
+//         }
+//       }
+//     }
 
-  /* If we have data, break early.  */
-  if(wd->PipeId)
-    {
-    return 1;
-    }
+//   /* If we have data, break early.  */
+//   if(wd->PipeId)
+//     {
+//     return 1;
+//     }
 
-  if(kwsysProcessGetTimeoutLeft(&wd->TimeoutTime, wd->User?wd->UserTimeout:0,
-                                &timeoutLength, 1))
-    {
-    /* Timeout has already expired.  */
-    wd->Expired = 1;
-    return 1;
-    }
+//   if(kwsysProcessGetTimeoutLeft(&wd->TimeoutTime, wd->User?wd->UserTimeout:0,
+//                                 &timeoutLength, 1))
+//     {
+//     /* Timeout has already expired.  */
+//     wd->Expired = 1;
+//     return 1;
+//     }
 
-  /* Sleep a little, try again. */
-  {
-  unsigned int msec = ((timeoutLength.tv_sec * 1000) +
-                       (timeoutLength.tv_usec / 1000));
-  if (msec > 100000)
-    {
-    msec = 100000;  /* do not sleep more than 100 milliseconds at a time */
-    }
-  kwsysProcess_usleep(msec);
-  }
-  return 0;
+//   /* Sleep a little, try again. */
+//   {
+//   unsigned int msec = ((timeoutLength.tv_sec * 1000) +
+//                        (timeoutLength.tv_usec / 1000));
+//   if (msec > 100000)
+//     {
+//     msec = 100000;  /* do not sleep more than 100 milliseconds at a time */
+//     }
+//   kwsysProcess_usleep(msec);
+//   }
+//   return 0;
 
-#else //__amigaos4__
+// #else //__amigaos4__
 
   int i;
   kwsysProcessTimeNative timeoutLength;
@@ -1665,78 +1668,78 @@ static int kwsysProcessWaitForPipe(kwsysProcess* cp, char** data, int* length,
   }
   return 0;
 #endif
-#endif
+// #endif
 }
 
-#ifdef __amigaos4__
-/*--------------------------------------------------------------------------*/
-/* This hook function will test for a child process and signal it. */
-STATIC int32 ASM mysighookfunc( REG(a0, struct Hook *hook ),
-                                REG(a2, uint32 parentID), /*userdata*/
-                                REG(a1, struct Process *aproc ))
-{
-    if( parentID == aproc->pr_ParentID )
-    {
-	//printf("process %d has parent %d\n", aproc->pr_ProcessID, aproc->pr_ParentID);
-	if (!(aproc->pr_Flags & PRF_HANDLERPROCESS))
-	{
-	        uint32 *hits = (uint32 *)hook->h_Data;
-    	    (*hits) ++;          /* increment hit counter */
-	}
-    }
-    return(0);               /* 0 = keep going until the end */
-}
+// #ifdef __amigaos4__
+// /*--------------------------------------------------------------------------*/
+// /* This hook function will test for a child process and signal it. */
+// STATIC int32 ASM mysighookfunc( REG(a0, struct Hook *hook ),
+//                                 REG(a2, uint32 parentID), /*userdata*/
+//                                 REG(a1, struct Process *aproc ))
+// {
+//     if( parentID == aproc->pr_ParentID )
+//     {
+// 	//printf("process %d has parent %d\n", aproc->pr_ProcessID, aproc->pr_ParentID);
+// 	if (!(aproc->pr_Flags & PRF_HANDLERPROCESS))
+// 	{
+// 	        uint32 *hits = (uint32 *)hook->h_Data;
+//     	    (*hits) ++;          /* increment hit counter */
+// 	}
+//     }
+//     return(0);               /* 0 = keep going until the end */
+// }
 
 
-/* This is the function that invokes the hook via ProcessScan() */
-uint32 waitchildren()
-{
-    struct Hook H;
-    uint32 hit_counter =0;
-	struct Process *parent = (struct Process *)IExec->FindTask(NULL);
-	int n;
+// /* This is the function that invokes the hook via ProcessScan() */
+// uint32 waitchildren()
+// {
+//     struct Hook H;
+//     uint32 hit_counter =0;
+// 	struct Process *parent = (struct Process *)IExec->FindTask(NULL);
+// 	int n;
 
-    H.h_Entry  = (APTR) &mysighookfunc;   /* init the hook struct */
-    H.h_Data   = (APTR) &hit_counter;     /* h_Data used for counter */
+//     H.h_Entry  = (APTR) &mysighookfunc;   /* init the hook struct */
+//     H.h_Data   = (APTR) &hit_counter;     /* h_Data used for counter */
 
-    IDOS->ProcessScan( &H, (APTR)parent->pr_ProcessID, 0);
+//     IDOS->ProcessScan( &H, (APTR)parent->pr_ProcessID, 0);
 
-	n = hit_counter;
-	while (n--)
-	IExec->Wait(SIGF_CHILD);
+// 	n = hit_counter;
+// 	while (n--)
+// 	IExec->Wait(SIGF_CHILD);
 
-    return(hit_counter);     /* return number of hits */
-}
-#endif
+//     return(hit_counter);     /* return number of hits */
+// }
+// #endif
 
 int kwsysProcess_WaitForExit(kwsysProcess* cp, double* userTimeout)
 {
   int prPipe = 0;
 
-#ifdef __amigaos4__
-  /* Make sure we are executing a process.  */
-  if(!cp)
-    {
-    return 1;
-    }
+// #ifdef __amigaos4__
+//   /* Make sure we are executing a process.  */
+//   if(!cp)
+//     {
+//     return 1;
+//     }
 
-//FIXME
-waitchildren();
-#else
+// //FIXME
+// waitchildren();
+// #else
   /* Make sure we are executing a process.  */
   if (!cp || cp->State != kwsysProcess_State_Executing) {
     return 1;
   }
-#endif
+// #endif
 
   /* Wait for all the pipes to close.  Ignore all data.  */
   while ((prPipe = kwsysProcess_WaitForData(cp, 0, 0, userTimeout)) > 0) {
     if (prPipe == kwsysProcess_Pipe_Timeout) {
 
-#ifdef __amigaos4__
-            kwsysProcessCleanup(cp, 0);
-      printf("== Pipe timeout error!\n");
-#endif
+// #ifdef __amigaos4__
+//             kwsysProcessCleanup(cp, 0);
+//       printf("== Pipe timeout error!\n");
+// #endif
 
       return 0;
     }
@@ -1814,7 +1817,7 @@ waitchildren();
   return 1;
 }
 
-#ifndef __amigaos4__
+// #ifndef __amigaos4__
 void kwsysProcess_Interrupt(kwsysProcess* cp)
 {
   int i;
@@ -1832,7 +1835,9 @@ void kwsysProcess_Interrupt(kwsysProcess* cp)
         if (cp->ForkPIDs[i]) {
           /* The user created a process group for this process.  The group ID
              is the process ID for the original process in the group.  */
-          kill(-cp->ForkPIDs[i], SIGINT);
+#ifndef __amigaos4__
+          // kill(-cp->ForkPIDs[i], SIGINT);
+#endif
         }
       }
     }
@@ -1845,7 +1850,7 @@ void kwsysProcess_Interrupt(kwsysProcess* cp)
     kill(0, SIGINT);
   }
 }
-#endif
+// #endif
 
 void kwsysProcess_Kill(kwsysProcess* cp)
 {
@@ -1861,7 +1866,7 @@ void kwsysProcess_Kill(kwsysProcess* cp)
      report it after we have already closed the read end.  */
   kwsysProcessCleanupDescriptor(&cp->SignalPipe);
 
-#if !defined(__APPLE__) && !defined(__amigaos4__)
+#if !defined(__APPLE__) //&& !defined(__amigaos4__)
   /* Close all the pipe read ends.  Do this before killing the
      children because Cygwin has problems killing processes that are
      blocking to wait for writing to their output pipes.  */
@@ -1871,9 +1876,9 @@ void kwsysProcess_Kill(kwsysProcess* cp)
   /* Kill the children.  */
   cp->Killed = 1;
 
-#ifdef __amigaos4__
-  waitchildren();
-#else
+// #ifdef __amigaos4__
+//   waitchildren();
+// #else
   for (i = 0; i < cp->NumberOfCommands; ++i) {
     int status;
     if (cp->ForkPIDs[i]) {
@@ -1882,8 +1887,10 @@ void kwsysProcess_Kill(kwsysProcess* cp)
 
       /* Reap the child.  Keep trying until the call is not
          interrupted.  */
+#ifndef __amigaos4__
       while ((waitpid(cp->ForkPIDs[i], &status, 0) < 0) && (errno == EINTR)) {
       }
+#endif
     }
   }
 
@@ -1893,12 +1900,12 @@ void kwsysProcess_Kill(kwsysProcess* cp)
      pipes are full and still have an open write end.  */
   kwsysProcessClosePipes(cp);
 #endif
-#endif
+// #endif
 
   cp->CommandsLeft = 0;
 }
 
-#ifndef __amigaos4__
+// #ifndef __amigaos4__
 /* Call the free() function with a pointer to volatile without causing
    compiler warnings.  */
 static void kwsysProcessVolatileFree(volatile void* p)
@@ -1914,28 +1921,30 @@ static void kwsysProcessVolatileFree(volatile void* p)
 #  pragma clang diagnostic pop
 #endif
 }
-#endif
+// #endif
 
 /* Initialize a process control structure for kwsysProcess_Execute.  */
 static int kwsysProcessInitialize(kwsysProcess* cp)
 {
   int i;
-  #ifndef __amigaos4__
+#ifdef __amigaos4__
+  struct Process** oldForkPIDs;
+#else
   volatile pid_t* oldForkPIDs;
-  #endif
+ #endif
   
   for (i = 0; i < KWSYSPE_PIPE_COUNT; ++i) {
-#ifdef __amigaos4__
-    cp->PipeReadEnds[i] = 0;
-#else
+// #ifdef __amigaos4__
+//     cp->PipeReadEnds[i] = 0;
+// #else
     cp->PipeReadEnds[i] = -1;
-#endif
+// #endif
   }
-#ifndef __amigaos4__
+// #ifndef __amigaos4__
   for (i = 0; i < 3; ++i) {
     cp->PipeChildStd[i] = -1;
   }
-#endif
+//#endif
   cp->SignalPipe = -1;
   cp->SelectError = 0;
   cp->StartTime.tv_sec = -1;
@@ -1952,12 +1961,17 @@ static int kwsysProcessInitialize(kwsysProcess* cp)
   cp->Killed = 0;
   cp->ErrorMessage[0] = 0;
 
-#ifndef __amigaos4__
+// #ifndef __amigaos4__
   oldForkPIDs = cp->ForkPIDs;
+#ifdef __amigaos4__
+  cp->ForkPIDs = (struct Process**)malloc(sizeof(volatile pid_t) *
+                                         (size_t)(cp->NumberOfCommands));
+#else
   cp->ForkPIDs = (volatile pid_t*)malloc(sizeof(volatile pid_t) *
                                          (size_t)(cp->NumberOfCommands));
-  kwsysProcessVolatileFree(oldForkPIDs);
 #endif
+  kwsysProcessVolatileFree(oldForkPIDs);
+// #endif
   if (!cp->ForkPIDs) {
     return 0;
   }
@@ -2028,23 +2042,25 @@ static void kwsysProcessCleanup(kwsysProcess* cp, int error)
 
     /* Kill any children already started.  */
     if (cp->ForkPIDs) {
-#ifdef __amigaos4__
-waitchildren();
-#else
+// #ifdef __amigaos4__
+// waitchildren();
+// #else
       int status;
       for (i = 0; i < cp->NumberOfCommands; ++i) {
         if (cp->ForkPIDs[i]) {
           /* Kill the child.  */
           kwsysProcessKill(cp->ForkPIDs[i]);
 
+#ifndef __amigaos4__
           /* Reap the child.  Keep trying until the call is not
              interrupted.  */
           while ((waitpid(cp->ForkPIDs[i], &status, 0) < 0) &&
                  (errno == EINTR)) {
           }
+#endif
         }
       }
-#endif
+// #endif
     }
 
     /* Restore the working directory.  */
@@ -2063,11 +2079,11 @@ waitchildren();
 
   /* Free memory.  */
   if (cp->ForkPIDs) {
-#ifdef __amigaos4__
-    free(cp->ForkPIDs);
-#else
+// #ifdef __amigaos4__
+//     free(cp->ForkPIDs);
+// #else
     kwsysProcessVolatileFree(cp->ForkPIDs);
-#endif
+// #endif
     cp->ForkPIDs = 0;
   }
   if (cp->RealWorkingDirectory) {
@@ -2079,45 +2095,46 @@ waitchildren();
   for (i = 0; i < KWSYSPE_PIPE_COUNT; ++i) {
     kwsysProcessCleanupDescriptor(&cp->PipeReadEnds[i]);
   }
-#ifndef __amigaos4__
+// #ifndef __amigaos4__
   for (i = 0; i < 3; ++i) {
     kwsysProcessCleanupDescriptor(&cp->PipeChildStd[i]);
   }
-#endif
+// #endif
 }
 
-#ifdef __amigaos4__
-static void kwsysProcessCleanupDescriptor(BPTR* pfd)
-{
-	if (*pfd != 0)
-		IDOS->Close(*pfd);
-	*pfd = 0;
-}
+// #ifdef __amigaos4__
+// static void kwsysProcessCleanupDescriptor(BPTR* pfd)
+// {
+// 	if (*pfd != 0)
+// 		IDOS->Close(*pfd);
+// 	*pfd = 0;
+// }
 
-/*--------------------------------------------------------------------------*/
-static void kwsysProcessClosePipes(kwsysProcess* cp)
-{
-  int i;
+// /*--------------------------------------------------------------------------*/
+// static void kwsysProcessClosePipes(kwsysProcess* cp)
+// {
+//   int i;
 
-  /* Close any pipes that are still open.  */
-  for(i=0; i < KWSYSPE_PIPE_COUNT; ++i)
-    {
-    if(cp->PipeReadEnds[i] > 0)
-      {
-      /* We are done reading from this pipe.  */
-      kwsysProcessCleanupDescriptor(&cp->PipeReadEnds[i]);
-      --cp->PipesLeft;
-      }
-    }
-}
+//   /* Close any pipes that are still open.  */
+//   for(i=0; i < KWSYSPE_PIPE_COUNT; ++i)
+//     {
+//     if(cp->PipeReadEnds[i] > 0)
+//       {
+//       /* We are done reading from this pipe.  */
+//       kwsysProcessCleanupDescriptor(&cp->PipeReadEnds[i]);
+//       --cp->PipesLeft;
+//       }
+//     }
+// }
 
-/*--------------------------------------------------------------------------*/
-static int kwsysProcessSetNonBlocking(BPTR fd)
-{
-return 1;
-}
+// /*--------------------------------------------------------------------------*/
+// static int kwsysProcessSetNonBlocking(BPTR fd)
+// {
+// return 1;
+// }
 
-#else
+// #else
+
 /* Close the given file descriptor if it is open.  Reset its value to -1.  */
 static void kwsysProcessCleanupDescriptor(int* pfd)
 {
@@ -2170,236 +2187,236 @@ static int kwsysProcessSetNonBlocking(int fd)
   }
   return flags >= 0;
 }
-#endif
+// #endif
 
 
 #if defined(__VMS)
 int decc$set_child_standard_streams(int fd1, int fd2, int fd3);
 #endif
 
-#ifdef __amigaos4__
-/*--------------------------------------------------------------------------*/
-VOID amiga_finalCode(int32 return_code, kwsysProcess *cp)
-{
-	struct Process *pr = (struct Process *)IExec->FindTask(NULL);
-	int i;
-	for(i = 0; i < cp->NumberOfCommands; i++)
-		if(pr == cp->ForkPIDs[i])
-			break;
-	//IExec->DebugPrintF("PROCESS: [%d/%d]%s(%d)\n", i, cp->NumberOfCommands, cp->Commands[i][0], return_code);
-//	if (i < cp->NumberOfCommands)
-	{
-		cp->CommandExitCodes[i] = return_code;
-		cp->CommandsLeft--;
-	}
-//	if (i == cp->NumberOfCommands-1)
-	{
-//      cp->ProcessResults[prPipe].ExitCode = cp->CommandExitCodes[prPipe];
-		//cp->State = kwsysProcess_State_Exited;
-      cp->ProcessResults[i].ExitCode = return_code;
-      cp->ProcessResults[i].ExitValue = return_code;
-//		cp->ExitCode = return_code;
-//		cp->ExitValue = return_code;
-		cp->ExitClean = 1;
-	}
-}
+// #ifdef __amigaos4__
+// /*--------------------------------------------------------------------------*/
+// VOID amiga_finalCode(int32 return_code, kwsysProcess *cp)
+// {
+// 	struct Process *pr = (struct Process *)IExec->FindTask(NULL);
+// 	int i;
+// 	for(i = 0; i < cp->NumberOfCommands; i++)
+// 		if(pr == cp->ForkPIDs[i])
+// 			break;
+// 	//IExec->DebugPrintF("PROCESS: [%d/%d]%s(%d)\n", i, cp->NumberOfCommands, cp->Commands[i][0], return_code);
+// //	if (i < cp->NumberOfCommands)
+// 	{
+// 		cp->CommandExitCodes[i] = return_code;
+// 		cp->CommandsLeft--;
+// 	}
+// //	if (i == cp->NumberOfCommands-1)
+// 	{
+// //      cp->ProcessResults[prPipe].ExitCode = cp->CommandExitCodes[prPipe];
+// 		//cp->State = kwsysProcess_State_Exited;
+//       cp->ProcessResults[i].ExitCode = return_code;
+//       cp->ProcessResults[i].ExitValue = return_code;
+// //		cp->ExitCode = return_code;
+// //		cp->ExitValue = return_code;
+// 		cp->ExitClean = 1;
+// 	}
+// }
 
-static int kwsysProcessCreate(kwsysProcess* cp, int prIndex,
-                              kwsysProcessCreateInformation* si, BPTR* readEnd)
-{	
-  /* Setup the process's stdin.  */
-  if(prIndex > 0)
-    {
-    si->StdIn = *readEnd;
-    *readEnd = IDOS->Input();
-    }
-  else if(cp->PipeFileSTDIN)
-    {
-    /* Open a file for the child's stdin to read.  */
-    //si->StdIn = open(cp->PipeFileSTDIN, O_RDONLY);
-	si->StdIn = IDOS->Open(cp->PipeFileSTDIN, MODE_OLDFILE);
-    if(si->StdIn == 0)
-      {
-      return 0;
-      }
-    }
-  else if(cp->PipeSharedSTDIN)
-    {
-    si->StdIn = IDOS->Input();
-    }
-  else if(cp->PipeNativeSTDIN[0] > 0)
-    {
-    si->StdIn = cp->PipeNativeSTDIN[0];
-    }
-  else
-    {
-    si->StdIn = -1;
-    }
+// static int kwsysProcessCreate(kwsysProcess* cp, int prIndex,
+//                               kwsysProcessCreateInformation* si, BPTR* readEnd)
+// {	
+//   /* Setup the process's stdin.  */
+//   if(prIndex > 0)
+//     {
+//     si->StdIn = *readEnd;
+//     *readEnd = IDOS->Input();
+//     }
+//   else if(cp->PipeFileSTDIN)
+//     {
+//     /* Open a file for the child's stdin to read.  */
+//     //si->StdIn = open(cp->PipeFileSTDIN, O_RDONLY);
+// 	si->StdIn = IDOS->Open(cp->PipeFileSTDIN, MODE_OLDFILE);
+//     if(si->StdIn == 0)
+//       {
+//       return 0;
+//       }
+//     }
+//   else if(cp->PipeSharedSTDIN)
+//     {
+//     si->StdIn = IDOS->Input();
+//     }
+//   else if(cp->PipeNativeSTDIN[0] > 0)
+//     {
+//     si->StdIn = cp->PipeNativeSTDIN[0];
+//     }
+//   else
+//     {
+//     si->StdIn = -1;
+//     }
 
-  /* Setup the process's stdout.  */
-  {
-  /* Create the pipe.  */
-  BPTR p[2];
-  if(amiga_pipe(p, 0) < 0) //nonblock amiga pipe
-    {
-    return 0;
-    }
-  *readEnd = p[0];
-  si->StdOut = p[1];
-  }
+//   /* Setup the process's stdout.  */
+//   {
+//   /* Create the pipe.  */
+//   BPTR p[2];
+//   if(amiga_pipe(p, 0) < 0) //nonblock amiga pipe
+//     {
+//     return 0;
+//     }
+//   *readEnd = p[0];
+//   si->StdOut = p[1];
+//   }
 
-  /* Replace the stdout pipe with a file if requested.  In this case
-     the select call will report that stdout is closed immediately.  */
-  if(prIndex == cp->NumberOfCommands-1 && cp->PipeFileSTDOUT)
-    {
-    if(!kwsysProcessSetupOutputPipeFile(&si->StdOut, cp->PipeFileSTDOUT))
-      {
-      return 0;
-      }
-    }
+//   /* Replace the stdout pipe with a file if requested.  In this case
+//      the select call will report that stdout is closed immediately.  */
+//   if(prIndex == cp->NumberOfCommands-1 && cp->PipeFileSTDOUT)
+//     {
+//     if(!kwsysProcessSetupOutputPipeFile(&si->StdOut, cp->PipeFileSTDOUT))
+//       {
+//       return 0;
+//       }
+//     }
 
-  /* Replace the stdout pipe with the parent's if requested.  In this
-     case the select call will report that stderr is closed
-     immediately.  */
-  if(prIndex == cp->NumberOfCommands-1 && cp->PipeSharedSTDOUT)
-    {
-    kwsysProcessCleanupDescriptor(&si->StdOut);
-    si->StdOut = IDOS->Output();
-    }
+//   /* Replace the stdout pipe with the parent's if requested.  In this
+//      case the select call will report that stderr is closed
+//      immediately.  */
+//   if(prIndex == cp->NumberOfCommands-1 && cp->PipeSharedSTDOUT)
+//     {
+//     kwsysProcessCleanupDescriptor(&si->StdOut);
+//     si->StdOut = IDOS->Output();
+//     }
 
-  /* Replace the stdout pipe with the native pipe provided if any.  In
-     this case the select call will report that stdout is closed
-     immediately.  */
-  if(prIndex == cp->NumberOfCommands-1 && cp->PipeNativeSTDOUT[1] > 0)
-    {
-    if(!kwsysProcessSetupOutputPipeNative(&si->StdOut, cp->PipeNativeSTDOUT))
-      {
-      return 0;
-      }
-    }
+//   /* Replace the stdout pipe with the native pipe provided if any.  In
+//      this case the select call will report that stdout is closed
+//      immediately.  */
+//   if(prIndex == cp->NumberOfCommands-1 && cp->PipeNativeSTDOUT[1] > 0)
+//     {
+//     if(!kwsysProcessSetupOutputPipeNative(&si->StdOut, cp->PipeNativeSTDOUT))
+//       {
+//       return 0;
+//       }
+//     }
 
-	char temp[1024],filename[4096];
-	strcpy(temp, cp->Commands[prIndex][0]);
-	if(temp[0] == '/')
-	{
-		char *tok = strtok(temp, "/");
-		strcpy(filename, tok);
-		strlcat(filename, ":", sizeof(filename));
-		tok = strtok(NULL,"/");
-		if(tok != NULL)
-		{
-			strlcat(filename, tok, sizeof(filename));
-			tok = strtok(NULL, "/");
-			while (tok != NULL)
-			{
-				strlcat(filename, "/", sizeof(filename));
-				strlcat(filename, tok, sizeof(filename));
-				tok = strtok(NULL, "/");
-			}
-		}
-	}
-	else
-		strcpy(filename, temp);
+// 	char temp[1024],filename[4096];
+// 	strcpy(temp, cp->Commands[prIndex][0]);
+// 	if(temp[0] == '/')
+// 	{
+// 		char *tok = strtok(temp, "/");
+// 		strcpy(filename, tok);
+// 		strlcat(filename, ":", sizeof(filename));
+// 		tok = strtok(NULL,"/");
+// 		if(tok != NULL)
+// 		{
+// 			strlcat(filename, tok, sizeof(filename));
+// 			tok = strtok(NULL, "/");
+// 			while (tok != NULL)
+// 			{
+// 				strlcat(filename, "/", sizeof(filename));
+// 				strlcat(filename, tok, sizeof(filename));
+// 				tok = strtok(NULL, "/");
+// 			}
+// 		}
+// 	}
+// 	else
+// 		strcpy(filename, temp);
 
-	BPTR seglist = IDOS->LoadSeg(filename);
-	if (!seglist)
-		return 0;
+// 	BPTR seglist = IDOS->LoadSeg(filename);
+// 	if (!seglist)
+// 		return 0;
 
-	char *args = malloc(4096);
-	memset(args, 0, 4096);
-	int maxlen = 4096, a = 0;
-	int i;
-	for (i = 1; cp->Commands[prIndex][i] != 0; i++ )
-	{
-		a+=strlen(cp->Commands[prIndex][i])+1;
-		if(a >= maxlen)
-		{
-			maxlen+=4096;
-			args = realloc(args, maxlen);
-		}
-		strlcat(args, cp->Commands[prIndex][i], maxlen);
-		strlcat(args, " ", maxlen);
-	}
+// 	char *args = malloc(4096);
+// 	memset(args, 0, 4096);
+// 	int maxlen = 4096, a = 0;
+// 	int i;
+// 	for (i = 1; cp->Commands[prIndex][i] != 0; i++ )
+// 	{
+// 		a+=strlen(cp->Commands[prIndex][i])+1;
+// 		if(a >= maxlen)
+// 		{
+// 			maxlen+=4096;
+// 			args = realloc(args, maxlen);
+// 		}
+// 		strlcat(args, cp->Commands[prIndex][i], maxlen);
+// 		strlcat(args, " ", maxlen);
+// 	}
 
-	IExec->DebugPrintF("file to execute: %s\n", cp->Commands[prIndex][0]);
-	IExec->DebugPrintF("args:            \"%s\"\n", args);
+// 	IExec->DebugPrintF("file to execute: %s\n", cp->Commands[prIndex][0]);
+// 	IExec->DebugPrintF("args:            \"%s\"\n", args);
 
-	int closestdin = TRUE, closestdout = TRUE, closestderr = TRUE;
+// 	int closestdin = TRUE, closestdout = TRUE, closestderr = TRUE;
 
-	if(si->StdIn == 0)
-		si->StdIn = IDOS->Open("NIL:", MODE_OLDFILE);
-	if(si->StdIn == IDOS->Input())
-		closestdin = FALSE;
+// 	if(si->StdIn == 0)
+// 		si->StdIn = IDOS->Open("NIL:", MODE_OLDFILE);
+// 	if(si->StdIn == IDOS->Input())
+// 		closestdin = FALSE;
 
-	if(si->StdOut == 0)
-		si->StdOut = IDOS->Open("NIL:", MODE_OLDFILE);
-	if(si->StdOut == IDOS->Output())
-		closestdout = FALSE;
+// 	if(si->StdOut == 0)
+// 		si->StdOut = IDOS->Open("NIL:", MODE_OLDFILE);
+// 	if(si->StdOut == IDOS->Output())
+// 		closestdout = FALSE;
 
-	if(si->StdErr == 0)
-		si->StdErr = IDOS->Open("NIL:", MODE_OLDFILE);
-	if(si->StdErr == IDOS->ErrorOutput())
-		closestderr = FALSE;
+// 	if(si->StdErr == 0)
+// 		si->StdErr = IDOS->Open("NIL:", MODE_OLDFILE);
+// 	if(si->StdErr == IDOS->ErrorOutput())
+// 		closestderr = FALSE;
 
-#if 0
-	VOID (*finalCode)(int32, kwsysProcess *);	
-	if(prIndex == 0)
-		finalCode = amiga_finalCode;
-#endif
+// #if 0
+// 	VOID (*finalCode)(int32, kwsysProcess *);	
+// 	if(prIndex == 0)
+// 		finalCode = amiga_finalCode;
+// #endif
 
-	struct Task *me = IExec->FindTask(NULL);
+// 	struct Task *me = IExec->FindTask(NULL);
 
-	//IExec->Forbid();  //***Seems dangerous... but we need this to keep the order of things happening on a straight line
+// 	//IExec->Forbid();  //***Seems dangerous... but we need this to keep the order of things happening on a straight line
 
-	cp->ForkPIDs[prIndex] = IDOS->CreateNewProcTags(
-							NP_Seglist,		seglist,
-							NP_FreeSeglist,	TRUE,
+// 	cp->ForkPIDs[prIndex] = IDOS->CreateNewProcTags(
+// 							NP_Seglist,		seglist,
+// 							NP_FreeSeglist,	TRUE,
 
-							NP_Cli,			TRUE,
-							NP_Child,		TRUE,
-							NP_NotifyOnDeathSigTask, me,
-#if 0
-							NP_Input,		IDOS->Input(),
-							NP_CloseInput,	FALSE,
-							NP_Output,		IDOS->Output(),
-							NP_CloseOutput,	FALSE,
-							NP_Error,		IDOS->ErrorOutput(),
-							NP_CloseError,	FALSE,
-#else
+// 							NP_Cli,			TRUE,
+// 							NP_Child,		TRUE,
+// 							NP_NotifyOnDeathSigTask, me,
+// #if 0
+// 							NP_Input,		IDOS->Input(),
+// 							NP_CloseInput,	FALSE,
+// 							NP_Output,		IDOS->Output(),
+// 							NP_CloseOutput,	FALSE,
+// 							NP_Error,		IDOS->ErrorOutput(),
+// 							NP_CloseError,	FALSE,
+// #else
 
-							NP_Input,		si->StdIn,
-							NP_CloseInput,	closestdin,
-							NP_Output,		si->StdOut,
-							NP_CloseOutput,	closestdout,
-							NP_Error,		si->StdErr,
-							NP_CloseError,	closestderr,
-#endif
-							NP_FinalCode,	amiga_finalCode,
-							NP_FinalData,	cp,
+// 							NP_Input,		si->StdIn,
+// 							NP_CloseInput,	closestdin,
+// 							NP_Output,		si->StdOut,
+// 							NP_CloseOutput,	closestdout,
+// 							NP_Error,		si->StdErr,
+// 							NP_CloseError,	closestderr,
+// #endif
+// 							NP_FinalCode,	amiga_finalCode,
+// 							NP_FinalData,	cp,
 
-							NP_Arguments,	args
-							);
+// 							NP_Arguments,	args
+// 							);
 
-	if (cp->ForkPIDs[prIndex] == 0)
-	{
-		return 0;
-	}
+// 	if (cp->ForkPIDs[prIndex] == 0)
+// 	{
+// 		return 0;
+// 	}
 
-  /* A child has been created.  */
-  ++cp->CommandsLeft;
+//   /* A child has been created.  */
+//   ++cp->CommandsLeft;
  
-	IDOS->Delay(20);  //if we don't give time for child process to start up, we get trouble. Reason unknown.
+// 	IDOS->Delay(20);  //if we don't give time for child process to start up, we get trouble. Reason unknown.
 
-  return 1;
-}
+//   return 1;
+// }
 
-/*--------------------------------------------------------------------------*/
-static void kwsysProcessDestroy(kwsysProcess* cp)
-{
-//FIXME later
-waitchildren();
-}
-#else
+// /*--------------------------------------------------------------------------*/
+// static void kwsysProcessDestroy(kwsysProcess* cp)
+// {
+// //FIXME later
+// waitchildren();
+// }
+// #else
 
 static int kwsysProcessCreate(kwsysProcess* cp, int prIndex,
                               kwsysProcessCreateInformation* si)
@@ -2454,6 +2471,8 @@ static int kwsysProcessCreate(kwsysProcess* cp, int prIndex,
      parent!  TODO: OptionDetach.  Also
      TODO:  CreateProcessGroup.  */
   cp->ForkPIDs[prIndex] = vfork();
+#elif defined(__amigaos4__)
+//todo
 #else
   cp->ForkPIDs[prIndex] = kwsysProcessFork(cp, si);
 #endif
@@ -2600,10 +2619,12 @@ static void kwsysProcessDestroy(kwsysProcess* cp)
   for (i = 0; i < cp->NumberOfCommands; ++i) {
     if (cp->ForkPIDs[i]) {
       int result;
+#ifndef __amigaos4__
       while (((result = waitpid(cp->ForkPIDs[i], &cp->CommandExitCodes[i],
                                 WNOHANG)) < 0) &&
              (errno == EINTR)) {
       }
+#endif
       if (result > 0) {
         /* This child has terminated.  */
         cp->ForkPIDs[i] = 0;
@@ -2629,17 +2650,17 @@ static void kwsysProcessDestroy(kwsysProcess* cp)
   /* Re-enable signals.  */
   sigprocmask(SIG_SETMASK, &old_mask, 0);
 }
-#endif
+// #endif
 
-#ifdef __amigaos4__
-static int kwsysProcessSetupOutputPipeFile(BPTR* p, const char* name)
-{
-  BPTR fout;
-#else
+// #ifdef __amigaos4__
+// static int kwsysProcessSetupOutputPipeFile(BPTR* p, const char* name)
+// {
+//   BPTR fout;
+// #else
 static int kwsysProcessSetupOutputPipeFile(int* p, const char* name)
 {
   int fout;
-#endif
+// #endif
 
   if (!name) {
     return 1;
@@ -2649,38 +2670,38 @@ static int kwsysProcessSetupOutputPipeFile(int* p, const char* name)
   kwsysProcessCleanupDescriptor(p);
 
   /* Open a file for the pipe to write.  */
-#ifdef __amigaos4__
-  if ((fout = IDOS->Open(name, MODE_NEWFILE)) < 0)
-#else
+// #ifdef __amigaos4__
+//   if ((fout = IDOS->Open(name, MODE_NEWFILE)) < 0)
+// #else
   if ((fout = open(name, O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0)
-#endif
+// #endif
   {
     return 0;
   }
 
-#ifndef __amigaos4_
+// #ifndef __amigaos4_
   /* Set close-on-exec flag on the pipe's end.  */
   if (fcntl(fout, F_SETFD, FD_CLOEXEC) < 0) {
     close(fout);
     return 0;
   }
-#endif
+// #endif
 
   /* Assign the replacement descriptor.  */
   *p = fout;
   return 1;
 }
 
-#ifdef __amigaos4__
-static int kwsysProcessSetupOutputPipeNative(BPTR* p, BPTR des[2])
-#else
+// #ifdef __amigaos4__
+// static int kwsysProcessSetupOutputPipeNative(BPTR* p, BPTR des[2])
+// #else
 static int kwsysProcessSetupOutputPipeNative(int* p, int des[2])
-#endif
+// #endif
 {
   /* Close the existing descriptor.  */
   kwsysProcessCleanupDescriptor(p);
 
-#ifndef __amigaos4__
+// #ifndef __amigaos4__
   /* Set close-on-exec flag on the pipe's ends.  The proper end will
      be dup2-ed into the standard descriptor number after fork but
      before exec.  */
@@ -2688,7 +2709,7 @@ static int kwsysProcessSetupOutputPipeNative(int* p, int des[2])
       (fcntl(des[1], F_SETFD, FD_CLOEXEC) < 0)) {
     return 0;
   }
-#endif
+// #endif
 
   /* Assign the replacement descriptor.  */
   *p = des[1];
@@ -3166,21 +3187,29 @@ static void kwsysProcessExit(void)
   _exit(0);
 }
 
-#if !defined(__VMS) && !defined(__amigaos4__)
+#if !defined(__VMS) //&& !defined(__amigaos4__)
 static pid_t kwsysProcessFork(kwsysProcess* cp,
                               kwsysProcessCreateInformation* si)
 {
   /* Create a detached process if requested.  */
   if (cp->OptionDetach) {
+#ifdef __amigaos4__
+    pid_t middle_pid = -1;
+#else
     /* Create an intermediate process.  */
     pid_t middle_pid = fork();
+#endif
     if (middle_pid < 0) {
       /* Fork failed.  Return as if we were not detaching.  */
       return middle_pid;
     }
     if (middle_pid == 0) {
       /* This is the intermediate process.  Create the real child.  */
+#ifdef __amigaos4__
+      pid_t child_pid = -1;
+#else
       pid_t child_pid = fork();
+#endif
       if (child_pid == 0) {
         /* This is the real child process.  There is nothing to do here.  */
         return 0;
@@ -3203,13 +3232,17 @@ static pid_t kwsysProcessFork(kwsysProcess* cp,
            (errno == EINTR)) {
     }
 
+#ifndef __amigaos4__
     /* Wait for the intermediate process to exit and clean it up.  */
     while ((waitpid(middle_pid, &status, 0) < 0) && (errno == EINTR)) {
     }
+#endif
     return child_pid;
   }
+#ifndef __amigaos4__
   /* Not creating a detached process.  Use normal fork.  */
   return fork();
+#endif
 }
 #endif
 
@@ -3242,7 +3275,7 @@ static void kwsysProcessKill(struct Process * process_id)
 {
 //FIXME
 //just wait for the children to finish:
-waitchildren();
+//waitchildren();
 }
 #else
 void kwsysProcess_KillPID(unsigned long process_id)
@@ -3412,13 +3445,13 @@ static int kwsysProcessesAdd(kwsysProcess* cp)
      given process object that a child has exited.  */
   {
     /* Create the pipe.  */
-#ifdef __amigaos4__
-  BPTR p[2];
-  if(amiga_pipe(p, 1) < 0)
-#else
+// #ifdef __amigaos4__
+//   BPTR p[2];
+//   if(amiga_pipe(p, 1) < 0)
+// #else
     int p[2];
     if (pipe(p KWSYSPE_VMS_NONBLOCK) < 0)
-#endif
+// #endif
     {
       return 0;
     }
@@ -3427,7 +3460,7 @@ static int kwsysProcessesAdd(kwsysProcess* cp)
     cp->PipeReadEnds[KWSYSPE_PIPE_SIGNAL] = p[0];
     cp->SignalPipe = p[1];
 
-#ifndef __amigaos4__
+// #ifndef __amigaos4__
     /* Switch the pipe to non-blocking mode so that reading a byte can
        be an atomic test-and-set.  */
     if (!kwsysProcessSetNonBlocking(p[0]) ||
@@ -3441,7 +3474,7 @@ static int kwsysProcessesAdd(kwsysProcess* cp)
         (fcntl(p[1], F_SETFD, FD_CLOEXEC) < 0)) {
       return 0;
     }
-#endif
+// #endif
   }
 
   /* Attempt to add the given signal pipe to the signal handler set.  */
