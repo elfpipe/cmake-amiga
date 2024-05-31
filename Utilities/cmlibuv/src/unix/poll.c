@@ -44,7 +44,6 @@ static void uv__poll_io(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
    * So to properly determine a POLLPRI or a POLLERR we need
    * to check for both.
    */
-#ifndef __amigaos4__
   if ((events & POLLERR) && !(events & UV__POLLPRI)) {
     uv__io_stop(loop, w, POLLIN | POLLOUT | UV__POLLRDHUP | UV__POLLPRI);
     uv__handle_stop(handle);
@@ -61,9 +60,6 @@ static void uv__poll_io(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
     pevents |= UV_WRITABLE;
   if (events & UV__POLLRDHUP)
     pevents |= UV_DISCONNECT;
-#else
-printf("poll not supported\n");
-#endif
 
   handle->poll_cb(handle, 0, pevents);
 }
@@ -105,15 +101,9 @@ int uv_poll_init_socket(uv_loop_t* loop, uv_poll_t* handle,
 
 
 static void uv__poll_stop(uv_poll_t* handle) {
-#ifndef __amigaos4__
   uv__io_stop(handle->loop,
               &handle->io_watcher,
               POLLIN | POLLOUT | UV__POLLRDHUP | UV__POLLPRI);
-#else
-  uv__io_stop(handle->loop,
-              &handle->io_watcher,
-              UV__POLLRDHUP | UV__POLLPRI);
-#endif
   uv__handle_stop(handle);
   uv__platform_invalidate_fd(handle->loop, handle->io_watcher.fd);
 }
@@ -148,16 +138,12 @@ int uv_poll_start(uv_poll_t* handle, int pevents, uv_poll_cb poll_cb) {
     return 0;
 
   events = 0;
-#ifndef __amigaos4__
   if (pevents & UV_READABLE)
     events |= POLLIN;
-#endif
   if (pevents & UV_PRIORITIZED)
     events |= UV__POLLPRI;
-#ifndef __amigaos4__
   if (pevents & UV_WRITABLE)
     events |= POLLOUT;
-#endif
   if (pevents & UV_DISCONNECT)
     events |= UV__POLLRDHUP;
 

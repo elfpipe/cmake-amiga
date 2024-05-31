@@ -347,6 +347,8 @@ int uv_tty_get_winsize(uv_tty_t* tty, int* width, int* height) {
   return 0;
 }
 
+#endif
+
 uv_handle_type uv_guess_handle(uv_file file) {
   struct sockaddr_storage ss;
   struct stat s;

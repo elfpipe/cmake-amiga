@@ -556,11 +556,7 @@ void uv__server_io(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
         (stream->flags & UV_HANDLE_TCP_SINGLE_ACCEPT)) {
       /* Give other processes a chance to accept connections. */
       struct timespec timeout = { 0, 1 };
-#ifdef __amigaos4__
-      usleep(1);
-#else
       nanosleep(&timeout, NULL);
-#endif
     }
   }
 }
@@ -685,10 +681,8 @@ static void uv__drain(uv_stream_t* stream) {
     if (stream->flags & UV_HANDLE_CLOSING)
       /* The user destroyed the stream before we got to do the shutdown. */
       err = UV_ECANCELED;
-#ifndef __amigaos4__
     else if (shutdown(uv__stream_fd(stream), SHUT_WR))
       err = UV__ERR(errno);
-#endif
     else /* Success. */
       stream->flags |= UV_HANDLE_SHUT;
 

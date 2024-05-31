@@ -1371,12 +1371,8 @@ int uv_os_unsetenv(const char* name) {
   if (name == NULL)
     return UV_EINVAL;
 
-#ifdef __amigaos4__
-  return UV_ENOSYS;
-#else
   if (unsetenv(name) != 0)
     return UV__ERR(errno);
-#endif
 
   return 0;
 }
@@ -1464,7 +1460,7 @@ int uv_os_setpriority(uv_pid_t pid, int priority) {
   if (priority < UV_PRIORITY_HIGHEST || priority > UV_PRIORITY_LOW)
     return UV_EINVAL;
 
-#ifdef __amigaos4__
+#ifndef __amigaos4__
   if (setpriority(PRIO_PROCESS, (int) pid, priority) != 0)
     return UV__ERR(errno);
 #endif
@@ -1685,12 +1681,6 @@ unsigned int uv_available_parallelism(void) {
   rc = __get_num_online_cpus();
   if (rc < 1)
     rc = 1;
-
-  return (unsigned) rc;
-#elif defined(__amigaos4__)
-  long rc;
-
-  rc = 1;
 
   return (unsigned) rc;
 #else  /* __linux__ */

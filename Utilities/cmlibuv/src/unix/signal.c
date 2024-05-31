@@ -142,7 +142,6 @@ static int uv__signal_unlock(void) {
 static void uv__signal_block_and_lock(sigset_t* saved_sigmask) {
   sigset_t new_mask;
 
-#ifndef __amigaos4__
   if (sigfillset(&new_mask))
     abort();
 
@@ -150,7 +149,6 @@ static void uv__signal_block_and_lock(sigset_t* saved_sigmask) {
   sigemptyset(saved_sigmask);
   if (pthread_sigmask(SIG_SETMASK, &new_mask, saved_sigmask))
     abort();
-#endif
 
   if (uv__signal_lock())
     abort();
@@ -161,10 +159,8 @@ static void uv__signal_unlock_and_unblock(sigset_t* saved_sigmask) {
   if (uv__signal_unlock())
     abort();
 
-#ifndef __amigaos4__
   if (pthread_sigmask(SIG_SETMASK, saved_sigmask, NULL))
     abort();
-#endif
 }
 
 
@@ -228,7 +224,6 @@ static void uv__signal_handler(int signum) {
 
 
 static int uv__signal_register_handler(int signum, int oneshot) {
-#ifndef __amigaos4__
   /* When this function is called, the signal lock must be held. */
   struct sigaction sa;
 
@@ -244,14 +239,12 @@ static int uv__signal_register_handler(int signum, int oneshot) {
   /* XXX save old action so we can restore it later on? */
   if (sigaction(signum, &sa, NULL))
     return UV__ERR(errno);
-#endif
 
   return 0;
 }
 
 
 static void uv__signal_unregister_handler(int signum) {
-#ifndef __amigaos4__
   /* When this function is called, the signal lock must be held. */
   struct sigaction sa;
 
@@ -264,7 +257,6 @@ static void uv__signal_unregister_handler(int signum) {
    */
   if (sigaction(signum, &sa, NULL))
     abort();
-#endif
 }
 
 

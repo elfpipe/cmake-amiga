@@ -418,12 +418,10 @@ static void uv__process_child_init(const uv_process_options_t* options,
   if (options->env != NULL)
     environ = options->env;
 
-#ifndef __amigaos4__
   /* Reset signal mask just before exec. */
   sigemptyset(&signewset);
   if (sigprocmask(SIG_SETMASK, &signewset, NULL) != 0)
     abort();
-#endif
 
 #ifdef __MVS__
   execvpe(options->file, options->args, environ);
@@ -854,10 +852,10 @@ static int uv__spawn_and_init_child_fork(const uv_process_options_t* options,
   sigdelset(&signewset, SIGILL);
   sigdelset(&signewset, SIGSYS);
   sigdelset(&signewset, SIGABRT);
-#ifndef __amigaos4__
   if (pthread_sigmask(SIG_BLOCK, &signewset, &sigoldset) != 0)
     abort();
 
+#ifndef __amigaos4__
   *pid = fork();
 
   if (*pid == 0) {
@@ -865,10 +863,12 @@ static int uv__spawn_and_init_child_fork(const uv_process_options_t* options,
     uv__process_child_init(options, stdio_count, pipes, error_fd);
     abort();
   }
+#endif
 
   if (pthread_sigmask(SIG_SETMASK, &sigoldset, NULL) != 0)
     abort();
-#else
+
+#ifdef __amigaos4__
   *pid = -1;  
 #endif
 

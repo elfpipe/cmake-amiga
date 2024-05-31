@@ -43,7 +43,7 @@
 #undef NANOSEC
 #define NANOSEC ((uint64_t) 1e9)
 
-#if defined(PTHREAD_BARRIER_SERIAL_THREAD)
+#if defined(PTHREAD_BARRIER_SERIAL_THREAD) && !defined(__amigaos4__)
 STATIC_ASSERT(sizeof(uv_barrier_t) == sizeof(pthread_barrier_t));
 #endif
 
@@ -542,7 +542,7 @@ typedef struct uv_semaphore_s {
 STATIC_ASSERT(sizeof(uv_sem_t) >= sizeof(uv_semaphore_t*));
 #endif
 
-#ifndef platform_needs_custom_semaphore
+#ifdef platform_needs_custom_semaphore
 
 static int uv__custom_sem_init(uv_sem_t* sem_, unsigned int value) {
   int err;
@@ -731,7 +731,7 @@ int uv_cond_init(uv_cond_t* cond) {
   if (err)
     return UV__ERR(err);
 
-#if !defined(__hpux)
+#if !defined(__hpux) && !defined(__amigaos4__)
   err = pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
   if (err)
     goto error2;

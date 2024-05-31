@@ -74,7 +74,8 @@
       defined(__MSYS__)   || \
       defined(__HAIKU__)  || \
       defined(__QNX__)    || \
-      defined(__GNU__)
+      defined(__GNU__)    || \
+      defined(__amigaos4__)
 # include "posix.h"
 #endif
 

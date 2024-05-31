@@ -349,8 +349,7 @@ if(AMIGA)
   )
   list(APPEND uv_sources
     src/unix/posix-hrtime.c
-#    src/unix/posix-poll.c
-src/unix/amiga.c
+    src/unix/posix-poll.c
     src/unix/no-fsevents.c
     src/unix/no-proctitle.c
   )
