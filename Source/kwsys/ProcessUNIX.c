@@ -2682,7 +2682,6 @@ static void kwsysProcessChildErrorExit(int errorPipe)
 /* Restores all signal handlers to their default values.  */
 static void kwsysProcessRestoreDefaultSignalHandlers(void)
 {
-#ifndef __amigaos4__
   struct sigaction act;
   memset(&act, 0, sizeof(struct sigaction));
   act.sa_handler = SIG_DFL;
@@ -2785,7 +2784,6 @@ static void kwsysProcessRestoreDefaultSignalHandlers(void)
 #ifdef SIGUNUSED
   sigaction(SIGUNUSED, &act, 0);
 #endif
-#endif //__amigaos4__
 }
 
 static void kwsysProcessExit(void)
