@@ -179,11 +179,9 @@ int uv_tty_init(uv_loop_t* loop, uv_tty_t* tty, int fd, int unused) {
      * master/slave pair (Linux). Therefore check if the fd points to a
      * slave device.
      */
-#ifndef __amigaos4__
     if (uv__tty_is_slave(fd) && ttyname_r(fd, path, sizeof(path)) == 0)
       r = uv__open_cloexec(path, mode | O_NOCTTY);
     else
-#endif
       r = -1;
 
     if (r < 0) {
@@ -333,7 +331,6 @@ int uv_tty_set_mode(uv_tty_t* tty, uv_tty_mode_t mode) {
 
 
 int uv_tty_get_winsize(uv_tty_t* tty, int* width, int* height) {
-#ifndef __amigaos4__
   struct winsize ws;
   int err;
 
@@ -346,19 +343,12 @@ int uv_tty_get_winsize(uv_tty_t* tty, int* width, int* height) {
 
   *width = ws.ws_col;
   *height = ws.ws_row;
-#endif
 
   return 0;
 }
 
-#endif
-
 uv_handle_type uv_guess_handle(uv_file file) {
-#ifdef __amigaos4__
-  struct sockaddr_in ss;
-#else
   struct sockaddr_storage ss;
-#endif
   struct stat s;
   socklen_t len;
   int type;
@@ -426,13 +416,12 @@ uv_handle_type uv_guess_handle(uv_file file) {
     return UV_UNKNOWN_HANDLE;
 
   if (type == SOCK_DGRAM)
-#ifdef __amigaos4__
-    if (ss.sin_family == AF_INET)
-      return UV_UDP;
-#else
-    if (ss.ss_family == AF_INET || ss.ss_family == AF_INET6)
-      return UV_UDP;
+    if (   ss.ss_family == AF_INET
+#ifndef __amigaos4__
+        || ss.ss_family == AF_INET6
 #endif
+    )
+      return UV_UDP;
 
   if (type == SOCK_STREAM) {
 #if defined(_AIX) || defined(__DragonFly__)
@@ -444,15 +433,14 @@ uv_handle_type uv_guess_handle(uv_file file) {
       return UV_NAMED_PIPE;
 #endif /* defined(_AIX) || defined(__DragonFly__) */
 
-#ifdef __amigaos4__
-    if (ss.sin_family == AF_INET)
-      return UV_TCP;
-#else
-    if (ss.ss_family == AF_INET || ss.ss_family == AF_INET6)
+    if (   ss.ss_family == AF_INET
+#ifndef __amigaos4__
+        || ss.ss_family == AF_INET6
+#endif
+    )
       return UV_TCP;
     if (ss.ss_family == AF_UNIX)
       return UV_NAMED_PIPE;
-#endif
   }
 
   return UV_UNKNOWN_HANDLE;

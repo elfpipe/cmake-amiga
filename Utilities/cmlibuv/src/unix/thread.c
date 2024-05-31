@@ -43,7 +43,7 @@
 #undef NANOSEC
 #define NANOSEC ((uint64_t) 1e9)
 
-#if defined(PTHREAD_BARRIER_SERIAL_THREAD) && !defined(__amigaos4__)
+#if defined(PTHREAD_BARRIER_SERIAL_THREAD)
 STATIC_ASSERT(sizeof(uv_barrier_t) == sizeof(pthread_barrier_t));
 #endif
 
@@ -521,7 +521,7 @@ static void glibc_version_check(void) {
       atoi(version + 2) < 21;
 }
 
-#elif defined(__MVS__) || defined(__amigaos4__)
+#elif defined(__MVS__)
 
 #define platform_needs_custom_semaphore 1
 
@@ -537,11 +537,9 @@ typedef struct uv_semaphore_s {
   unsigned int value;
 } uv_semaphore_t;
 
-#ifndef __amigaos4__
 #if (defined(__GLIBC__) && !defined(__UCLIBC__)) || \
     platform_needs_custom_semaphore
 STATIC_ASSERT(sizeof(uv_sem_t) >= sizeof(uv_semaphore_t*));
-#endif
 #endif
 
 #ifndef platform_needs_custom_semaphore
@@ -733,7 +731,7 @@ int uv_cond_init(uv_cond_t* cond) {
   if (err)
     return UV__ERR(err);
 
-#if !defined(__hpux) && !defined(__amigaos4__)
+#if !defined(__hpux)
   err = pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
   if (err)
     goto error2;

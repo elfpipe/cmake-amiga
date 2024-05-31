@@ -31,9 +31,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
-#ifndef __amigaos4__
 #include <sys/un.h>
-#endif
 #include <unistd.h>
 #include <limits.h> /* IOV_MAX */
 

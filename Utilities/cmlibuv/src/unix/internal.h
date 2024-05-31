@@ -54,7 +54,6 @@
 # define reqevents events
 # define rtnevents revents
 # include <sys/poll.h>
-#elif defined(__amigaos4__)
 #else
 # include <poll.h>
 #endif /* _AIX */
@@ -143,13 +142,6 @@ int uv__pthread_sigmask(int how, const sigset_t* set, sigset_t* oset);
 # define UV__POLLPRI POLLPRI
 #else
 # define UV__POLLPRI 0
-#endif
-
-#ifdef __amigaos4__
-#define POLLIN		0x001		/* There is data to read.  */
-#define POLLOUT		0x004		/* Writing now will not block.  */
-#define POLLERR		0x008		/* Error condition.  */
-#define POLLHUP		0x010		/* Hung up.  */
 #endif
 
 #if !defined(O_CLOEXEC) && defined(__FreeBSD__)

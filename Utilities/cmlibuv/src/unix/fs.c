@@ -44,9 +44,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <fcntl.h>
-#ifndef __amigaos4__
 #include <poll.h>
-#endif
 
 #if defined(__DragonFly__)        ||                                      \
     defined(__FreeBSD__)          ||                                      \
@@ -83,7 +81,8 @@
     defined(__FreeBSD__)          ||                                      \
     defined(__FreeBSD_kernel__)   ||                                      \
     defined(__OpenBSD__)          ||                                      \
-    defined(__NetBSD__)
+    defined(__NetBSD__)           ||                                      \
+    defined(__amigaos4__)
 # include <sys/param.h>
 # include <sys/mount.h>
 #elif defined(__sun)      || \
@@ -92,7 +91,6 @@
       defined(__HAIKU__)  || \
       defined(__QNX__)
 # include <sys/statvfs.h>
-#elif defined(__amigaos4__)
 #else
 # include <sys/statfs.h>
 #endif
@@ -285,7 +283,7 @@ static ssize_t uv__fs_futime(uv_fs_t* req) {
 #endif
 }
 
-#if (defined(__sun) || defined(__hpux)) && (_XOPEN_SOURCE < 600 || defined(CMAKE_BOOTSTRAP)) || defined(__amigaos4__)
+#if (defined(__sun) || defined(__hpux)) && (_XOPEN_SOURCE < 600 || defined(CMAKE_BOOTSTRAP))
 static char* uv__mkdtemp(char *template)
 {
   if (!mktemp(template) || mkdir(template, 0700))
@@ -664,9 +662,6 @@ static int uv__fs_closedir(uv_fs_t* req) {
 }
 
 static int uv__fs_statfs(uv_fs_t* req) {
-#if defined(__amigaos4__)
-    return -1;
-#else
   uv_statfs_t* stat_fs;
 #if defined(__sun)      || \
     defined(__MVS__)    || \
@@ -696,6 +691,7 @@ static int uv__fs_statfs(uv_fs_t* req) {
     defined(__HAIKU__)    || \
     defined(__QNX__)
   stat_fs->f_type = 0;  /* f_type is not supported. */
+#elif defined(__amigaos4__)
 #else
   stat_fs->f_type = buf.f_type;
 #endif
@@ -707,17 +703,12 @@ static int uv__fs_statfs(uv_fs_t* req) {
   stat_fs->f_ffree = buf.f_ffree;
   req->ptr = stat_fs;
   return 0;
-#endif //__amigaos4__
 }
 
 static ssize_t uv__fs_pathmax_size(const char* path) {
   ssize_t pathmax;
 
-#ifdef __amigaos4__
-  pathmax = 1024;
-#else
   pathmax = pathconf(path, _PC_PATH_MAX);
-#endif
 
   if (pathmax == -1)
     pathmax = UV__PATH_MAX;
@@ -814,9 +805,7 @@ static ssize_t uv__fs_realpath(uv_fs_t* req) {
 }
 
 static ssize_t uv__fs_sendfile_emul(uv_fs_t* req) {
-#ifndef __amigaos4__
   struct pollfd pfd;
-#endif
   int use_pread;
   off_t offset;
   ssize_t nsent;
@@ -902,7 +891,6 @@ static ssize_t uv__fs_sendfile_emul(uv_fs_t* req) {
         goto out;
       }
 
-#ifndef __amigaos4__
       pfd.fd = out_fd;
       pfd.events = POLLOUT;
       pfd.revents = 0;
@@ -916,9 +904,6 @@ static ssize_t uv__fs_sendfile_emul(uv_fs_t* req) {
         nsent = -1;
         goto out;
       }
-#else
-printf("using poll to check file send\n poll is not amiga compatible\n");
-#endif
     }
 
     offset += nread;
@@ -1748,9 +1733,7 @@ static void uv__fs_work(struct uv__work* w) {
     X(COPYFILE, uv__fs_copyfile(req));
     X(FCHMOD, fchmod(req->file, req->mode));
     X(FCHOWN, fchown(req->file, req->uid, req->gid));
-#ifndef __amigaos4__
     X(LCHOWN, lchown(req->path, req->uid, req->gid));
-#endif
     X(FDATASYNC, uv__fs_fdatasync(req));
     X(FSTAT, uv__fs_fstat(req->file, &req->statbuf));
     X(FSYNC, uv__fs_fsync(req));

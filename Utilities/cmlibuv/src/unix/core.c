@@ -34,9 +34,7 @@
 #include <fcntl.h>  /* O_CLOEXEC */
 #include <sys/ioctl.h>
 #include <sys/socket.h>
-#ifndef __amigaos4__
 #include <sys/un.h>
-#endif
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <limits.h> /* INT_MAX, PATH_MAX, IOV_MAX */
@@ -815,11 +813,7 @@ static void uv__run_pending(uv_loop_t* loop) {
     QUEUE_REMOVE(q);
     QUEUE_INIT(q);
     w = QUEUE_DATA(q, uv__io_t, pending_queue);
-#ifdef __amigaos4__
-    w->cb(loop, w, 0);
-#else
     w->cb(loop, w, POLLOUT);
-#endif
   }
 }
 
@@ -888,9 +882,7 @@ void uv__io_init(uv__io_t* w, uv__io_cb cb, int fd) {
 
 
 void uv__io_start(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
-#ifndef __amigaos4__
   assert(0 == (events & ~(POLLIN | POLLOUT | UV__POLLRDHUP | UV__POLLPRI)));
-#endif
   assert(0 != events);
   assert(w->fd >= 0);
   assert(w->fd < INT_MAX);
@@ -918,9 +910,7 @@ void uv__io_start(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
 
 
 void uv__io_stop(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
-#ifndef __amigaos4__
   assert(0 == (events & ~(POLLIN | POLLOUT | UV__POLLRDHUP | UV__POLLPRI)));
-#endif
   assert(0 != events);
 
   if (w->fd == -1)
@@ -951,11 +941,7 @@ void uv__io_stop(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
 
 
 void uv__io_close(uv_loop_t* loop, uv__io_t* w) {
-#ifdef __amigaos4__
-  uv__io_stop(loop, w, UV__POLLRDHUP | UV__POLLPRI);
-#else
   uv__io_stop(loop, w, POLLIN | POLLOUT | UV__POLLRDHUP | UV__POLLPRI);
-#endif
   QUEUE_REMOVE(&w->pending_queue);
 
   /* Remove stale events for this file descriptor */
@@ -971,9 +957,7 @@ void uv__io_feed(uv_loop_t* loop, uv__io_t* w) {
 
 
 int uv__io_active(const uv__io_t* w, unsigned int events) {
-#ifndef __amigaos4__
   assert(0 == (events & ~(POLLIN | POLLOUT | UV__POLLRDHUP | UV__POLLPRI)));
-#endif
   assert(0 != events);
   return 0 != (w->pevents & events);
 }
@@ -996,7 +980,7 @@ int uv_getrusage(uv_rusage_t* rusage) {
   rusage->ru_stime.tv_sec = usage.ru_stime.tv_sec;
   rusage->ru_stime.tv_usec = usage.ru_stime.tv_usec;
 
-#if !defined(__MVS__) && !defined(__HAIKU__) && !defined(__amigaos4__)
+#if !defined(__MVS__) && !defined(__HAIKU__)
   rusage->ru_maxrss = usage.ru_maxrss;
   rusage->ru_ixrss = usage.ru_ixrss;
   rusage->ru_idrss = usage.ru_idrss;
@@ -1188,7 +1172,7 @@ return_buffer:
 
 int uv__getpwuid_r(uv_passwd_t* pwd) {
 #ifdef __amigaos4__
-  return ENOSYS;
+  return UV_ENOSYS;
 #else
   struct passwd pw;
   struct passwd* result;
@@ -1388,7 +1372,7 @@ int uv_os_unsetenv(const char* name) {
     return UV_EINVAL;
 
 #ifdef __amigaos4__
-  return UV__ERR(ENOSYS);
+  return UV_ENOSYS;
 #else
   if (unsetenv(name) != 0)
     return UV__ERR(errno);
@@ -1480,7 +1464,7 @@ int uv_os_setpriority(uv_pid_t pid, int priority) {
   if (priority < UV_PRIORITY_HIGHEST || priority > UV_PRIORITY_LOW)
     return UV_EINVAL;
 
-#ifndef __amigaos4__
+#ifdef __amigaos4__
   if (setpriority(PRIO_PROCESS, (int) pid, priority) != 0)
     return UV__ERR(errno);
 #endif

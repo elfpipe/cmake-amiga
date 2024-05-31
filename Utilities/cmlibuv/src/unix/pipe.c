@@ -25,9 +25,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
-#ifndef __amigaos4__
 #include <sys/un.h>
-#endif
 #include <unistd.h>
 #include <stdlib.h>
 
@@ -43,9 +41,7 @@ int uv_pipe_init(uv_loop_t* loop, uv_pipe_t* handle, int ipc) {
 
 
 int uv_pipe_bind(uv_pipe_t* handle, const char* name) {
-#ifndef __amigaos4__
   struct sockaddr_un saddr;
-#endif
   const char* pipe_fname = NULL;
   int sockfd = -1;
   int err;
@@ -64,9 +60,6 @@ int uv_pipe_bind(uv_pipe_t* handle, const char* name) {
   /* We've got a copy, don't touch the original any more. */
   name = NULL;
 
-#ifdef __amigaos4__
-  printf("amiga does not support unix sockets\n");
-#else
   err = uv__socket(AF_UNIX, SOCK_STREAM, 0);
   if (err < 0)
     goto err_socket;
@@ -85,7 +78,6 @@ int uv_pipe_bind(uv_pipe_t* handle, const char* name) {
     uv__close(sockfd);
     goto err_socket;
   }
-#endif
 
   /* Success. */
   handle->flags |= UV_HANDLE_BOUND;
@@ -120,11 +112,7 @@ int uv__pipe_listen(uv_pipe_t* handle, int backlog, uv_connection_cb cb) {
 
   handle->connection_cb = cb;
   handle->io_watcher.cb = uv__server_io;
-#ifndef __amigaos4__
   uv__io_start(handle->loop, &handle->io_watcher, POLLIN);
-#else
-printf("amiga does not support POLLIN\n");
-#endif
   return 0;
 }
 
@@ -186,16 +174,13 @@ void uv_pipe_connect(uv_connect_t* req,
                     uv_pipe_t* handle,
                     const char* name,
                     uv_connect_cb cb) {
-#ifndef __amigaos4__
   struct sockaddr_un saddr;
-#endif
   int new_sock;
   int err;
   int r;
 
   new_sock = (uv__stream_fd(handle) == -1);
 
-#ifndef __amigaos4__
   if (new_sock) {
     err = uv__socket(AF_UNIX, SOCK_STREAM, 0);
     if (err < 0)
@@ -235,9 +220,6 @@ void uv_pipe_connect(uv_connect_t* req,
 
   if (err == 0)
     uv__io_start(handle->loop, &handle->io_watcher, POLLOUT);
-#else
-printf("POLLout is not supported on amiga\n");
-#endif
 
 out:
   handle->delayed_error = err;
@@ -259,13 +241,10 @@ static int uv__pipe_getsockpeername(const uv_pipe_t* handle,
                                     uv__peersockfunc func,
                                     char* buffer,
                                     size_t* size) {
-#ifndef __amigaos4__
   struct sockaddr_un sa;
-#endif
   socklen_t addrlen;
   int err;
 
-#ifndef __amigaos4__
   addrlen = sizeof(sa);
   memset(&sa, 0, addrlen);
   err = uv__getsockpeername((const uv_handle_t*) handle,
@@ -297,7 +276,6 @@ static int uv__pipe_getsockpeername(const uv_pipe_t* handle,
   /* only null-terminate if it's not an abstract socket */
   if (buffer[0] != '\0')
     buffer[addrlen] = '\0';
-#endif //__amigaos4__
   return 0;
 }
 
@@ -419,8 +397,6 @@ int uv_pipe(uv_os_fd_t fds[2], int read_flags, int write_flags) {
     fds[1] = temp[1];
     return 0;
   }
-#elif __amigaos4__
-printf("pipe not implemented on amiga\n");
 #else
   if (pipe(temp))
     return UV__ERR(errno);

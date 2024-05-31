@@ -29,11 +29,7 @@
 
 
 static int new_socket(uv_tcp_t* handle, int domain, unsigned long flags) {
-#ifdef __amigaos4__
-  struct sockaddr_in saddr;
-#else
   struct sockaddr_storage saddr;
-#endif
   socklen_t slen;
   int sockfd;
   int err;
@@ -69,11 +65,7 @@ static int new_socket(uv_tcp_t* handle, int domain, unsigned long flags) {
 
 
 static int maybe_new_socket(uv_tcp_t* handle, int domain, unsigned long flags) {
-#ifdef __amigaos4__
-  struct sockaddr_in saddr;
-#else
   struct sockaddr_storage saddr;
-#endif
   socklen_t slen;
 
   if (domain == AF_UNSPEC) {
@@ -97,15 +89,13 @@ static int maybe_new_socket(uv_tcp_t* handle, int domain, unsigned long flags) {
       if (getsockname(uv__stream_fd(handle), (struct sockaddr*) &saddr, &slen))
         return UV__ERR(errno);
 
-#ifdef __amigaos4__
-      if  (saddr.sin_family == AF_INET &&
-          ((struct sockaddr_in*) &saddr)->sin_port != 0) {
-#else
-      if ((saddr.ss_family == AF_INET6 &&
+      if (
+#ifndef __amigaos4__
+        (saddr.ss_family == AF_INET6 &&
           ((struct sockaddr_in6*) &saddr)->sin6_port != 0) ||
+#endif
           (saddr.ss_family == AF_INET &&
           ((struct sockaddr_in*) &saddr)->sin_port != 0)) {
-#endif
         /* Handle is already bound to a port. */
         handle->flags |= flags;
         return 0;
@@ -512,7 +502,6 @@ int uv_socketpair(int type, int protocol, uv_os_sock_t fds[2], int flags0, int f
     fds[1] = temp[1];
     return 0;
   }
-#elif defined(__amigaos4__)
 #else
   if (socketpair(AF_UNIX, type, protocol, temp))
     return UV__ERR(errno);

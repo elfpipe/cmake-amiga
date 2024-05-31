@@ -33,9 +33,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <fcntl.h>
-#ifndef __amigaos4__
 #include <poll.h>
-#endif
 #include <sched.h>
 
 #if defined(__APPLE__)
@@ -420,13 +418,12 @@ static void uv__process_child_init(const uv_process_options_t* options,
   if (options->env != NULL)
     environ = options->env;
 
-#ifdef __amigaos4__
-printf("uv__process_child_init incomplete\n");
-#else
+#ifndef __amigaos4__
   /* Reset signal mask just before exec. */
   sigemptyset(&signewset);
   if (sigprocmask(SIG_SETMASK, &signewset, NULL) != 0)
     abort();
+#endif
 
 #ifdef __MVS__
   execvpe(options->file, options->args, environ);
@@ -435,7 +432,6 @@ printf("uv__process_child_init incomplete\n");
 #endif
 
   uv__write_errno(error_fd);
-#endif
 }
 #endif
 

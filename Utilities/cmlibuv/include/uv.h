@@ -68,13 +68,12 @@ extern "C" {
 
 #if defined(_WIN32)
 # include "uv/win.h"
-//#elif defined(__amigaos4__)
 #else
 # include "uv/unix.h"
 #endif
 
 #ifdef __amigaos4__
-#define SSIZE_MAX LONG_MAX
+#include <limits.h> //SSIZE_MAX
 #endif
 
 
@@ -1154,11 +1153,9 @@ struct uv_interface_address_s {
 #ifdef __amigaos4__
   union {
     struct sockaddr_in address4;
-//    struct sockaddr_in6 address6;
   } address;
   union {
     struct sockaddr_in netmask4;
-//    struct sockaddr_in6 netmask6;
   } netmask;
 #else
   union {
@@ -1779,13 +1776,11 @@ UV_EXTERN void uv_rwlock_wrlock(uv_rwlock_t* rwlock);
 UV_EXTERN int uv_rwlock_trywrlock(uv_rwlock_t* rwlock);
 UV_EXTERN void uv_rwlock_wrunlock(uv_rwlock_t* rwlock);
 
-#ifndef __amigaos4__
 UV_EXTERN int uv_sem_init(uv_sem_t* sem, unsigned int value);
 UV_EXTERN void uv_sem_destroy(uv_sem_t* sem);
 UV_EXTERN void uv_sem_post(uv_sem_t* sem);
 UV_EXTERN void uv_sem_wait(uv_sem_t* sem);
 UV_EXTERN int uv_sem_trywait(uv_sem_t* sem);
-#endif
 
 UV_EXTERN int uv_cond_init(uv_cond_t* cond);
 UV_EXTERN void uv_cond_destroy(uv_cond_t* cond);

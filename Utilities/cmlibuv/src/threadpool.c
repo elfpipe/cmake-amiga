@@ -59,9 +59,7 @@ static void worker(void* arg) {
   QUEUE* q;
   int is_slow_work;
 
-#ifndef __amigaos4__
   uv_sem_post((uv_sem_t*) arg);
-#endif
   arg = NULL;
 
   uv_mutex_lock(&mutex);
@@ -195,9 +193,7 @@ void uv__threadpool_cleanup(void) {
 static void init_threads(void) {
   unsigned int i;
   const char* val;
-#ifndef __amigaos4__
   uv_sem_t sem;
-#endif
 
   nthreads = ARRAY_SIZE(default_threads);
   val = getenv("UV_THREADPOOL_SIZE");
@@ -227,16 +223,10 @@ static void init_threads(void) {
   QUEUE_INIT(&slow_io_pending_wq);
   QUEUE_INIT(&run_slow_work_message);
 
-#ifndef __amigaos4__
   if (uv_sem_init(&sem, 0))
     abort();
-#endif
 
   for (i = 0; i < nthreads; i++)
-#ifdef __amigaos4__
-    if (uv_thread_create(threads + i, worker, 0))
-      abort();
-#else
     if (uv_thread_create(threads + i, worker, &sem))
       abort();
 
@@ -244,7 +234,6 @@ static void init_threads(void) {
     uv_sem_wait(&sem);
 
   uv_sem_destroy(&sem);
-#endif
 }
 
 

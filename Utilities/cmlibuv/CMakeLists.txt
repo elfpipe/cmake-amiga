@@ -347,9 +347,6 @@ if(AMIGA)
   list(APPEND uv_headers
     include/uv/posix.h
   )
-#  list(APPEND uv_defines
-#    CMAKE_BOOTSTRAP
-#  )
   list(APPEND uv_sources
     src/unix/posix-hrtime.c
 #    src/unix/posix-poll.c

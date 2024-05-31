@@ -32,7 +32,6 @@
 
 #if defined(_WIN32)
 # include <malloc.h> /* malloc */
-#elif defined(__amigaos4__)
 #else
 # include <net/if.h> /* if_nametoindex */
 # include <sys/un.h> /* AF_UNIX, sockaddr_un */
@@ -421,11 +420,7 @@ int uv_udp_connect(uv_udp_t* handle, const struct sockaddr* addr) {
 
 
 int uv__udp_is_connected(uv_udp_t* handle) {
-#ifdef __amigaos4__
-  struct sockaddr_in addr;
-#else
   struct sockaddr_storage addr;
-#endif
   int addrlen;
   if (handle->type != UV_UDP)
     return 0;
@@ -457,7 +452,7 @@ int uv__udp_check_before_send(uv_udp_t* handle, const struct sockaddr* addr) {
     else if (addr->sa_family == AF_INET6)
       addrlen = sizeof(struct sockaddr_in6);
 #endif
-#if defined(AF_UNIX) && !defined(_WIN32) && !defined(__amigaos4__)
+#if defined(AF_UNIX) && !defined(_WIN32)
     else if (addr->sa_family == AF_UNIX)
       addrlen = sizeof(struct sockaddr_un);
 #endif
