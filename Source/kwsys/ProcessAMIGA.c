@@ -207,7 +207,7 @@ typedef struct kwsysProcessCreateInformation_s
 static void kwsysProcessVolatileFree(volatile void* p);
 static int kwsysProcessInitialize(kwsysProcess* cp);
 static void kwsysProcessCleanup(kwsysProcess* cp, int error);
-static void kwsysProcessCleanupDescriptor(BPTR pfd);
+static void kwsysProcessCleanupDescriptor(BPTR *pfd);
 static void kwsysProcessClosePipes(kwsysProcess* cp);
 static int kwsysProcessSetNonBlocking(BPTR fd);
 static int kwsysProcessCreate(kwsysProcess* cp, int prIndex,
@@ -284,7 +284,8 @@ struct kwsysProcess_s
   /* Process IDs returned by the calls to fork.  Everything is volatile
      because the signal handler accesses them.  You must be very careful
      when reaping PIDs or modifying this array to avoid race conditions.  */
-  volatile struct Process* volatile ForkPIDs;
+  // volatile struct Process** volatile ForkPIDs;
+  struct Process** ForkPIDs;
 
   /* Flag for whether the children were terminated by a failed select.  */
   int SelectError;
@@ -945,7 +946,7 @@ void kwsysProcess_Execute(kwsysProcess* cp)
   } else if (cp->PipeSharedSTDERR) {
     /* Use the parent stderr.  */
     kwsysProcessCleanupDescriptor(&cp->PipeChildStd[2]);
-    cp->PipeChildStd[2] = IDOS->DupFileHandle(IDOS->OutputError());
+    cp->PipeChildStd[2] = IDOS->DupFileHandle(IDOS->ErrorOutput());
   } else if (cp->PipeNativeSTDERR[1] != 0) {
     /* Use the given handle for stderr.  */
     if (!kwsysProcessSetupOutputPipeNative(&cp->PipeChildStd[2],
@@ -963,7 +964,7 @@ void kwsysProcess_Execute(kwsysProcess* cp)
   /* Create the pipeline of processes.  */
   {
     kwsysProcessCreateInformation si = { -1, -1, -1, { -1, -1 } };
-    int nextStdIn = cp->PipeChildStd[0];
+    BPTR nextStdIn = cp->PipeChildStd[0];
     for (i = 0; i < cp->NumberOfCommands; ++i) {
       /* Setup the process's pipes.  */
       si.StdIn = nextStdIn;
@@ -972,7 +973,7 @@ void kwsysProcess_Execute(kwsysProcess* cp)
         si.StdOut = cp->PipeChildStd[1];
       } else {
         /* Create a pipe to sit between the children.  */
-        int p[2] = { -1, -1 };
+        BPTR p[2] = { 0, 0 };
         if (amiga_pipe(p, 1) < 0) {
           if (nextStdIn != cp->PipeChildStd[0]) {
             kwsysProcessCleanupDescriptor(&nextStdIn);
@@ -1355,7 +1356,7 @@ void kwsysProcess_Interrupt(kwsysProcess* cp)
         if (cp->ForkPIDs[i]) {
           /* The user created a process group for this process.  The group ID
              is the process ID for the original process in the group.  */
-          kill(-cp->ForkPIDs[i], SIGINT);
+          // kill(-cp->ForkPIDs[i], SIGINT);
         }
       }
     }
@@ -1365,7 +1366,7 @@ void kwsysProcess_Interrupt(kwsysProcess* cp)
        SIGINT) as a way to still interrupt the process even though it's not in
        a special group, this is not an option on Windows.  Therefore, we kill
        the current process group for consistency with Windows.  */
-    kill(0, SIGINT);
+//    kill(0, SIGINT);
   }
 }
 
@@ -1438,7 +1439,7 @@ static void kwsysProcessVolatileFree(volatile void* p)
 static int kwsysProcessInitialize(kwsysProcess* cp)
 {
   int i;
-  volatile pid_t* oldForkPIDs;
+  struct Process** oldForkPIDs;
   
   for (i = 0; i < KWSYSPE_PIPE_COUNT; ++i) {
     cp->PipeReadEnds[i] = -1;
@@ -1463,7 +1464,7 @@ static int kwsysProcessInitialize(kwsysProcess* cp)
   cp->ErrorMessage[0] = 0;
 
   oldForkPIDs = cp->ForkPIDs;
-  cp->ForkPIDs = (volatile pid_t*)malloc(sizeof(volatile pid_t) *
+  cp->ForkPIDs = (struct Process **)malloc(sizeof(struct Process *) *
                                          (size_t)(cp->NumberOfCommands));
   kwsysProcessVolatileFree(oldForkPIDs);
   if (!cp->ForkPIDs) {
@@ -1588,10 +1589,10 @@ static void kwsysProcessCleanup(kwsysProcess* cp, int error)
 /* Close the given file descriptor if it is open.  Reset its value to -1.  */
 static void kwsysProcessCleanupDescriptor(BPTR* pfd)
 {
-  if (pfd) {
+  if (*pfd) {
     /* Keep trying to close until it is not interrupted by a
      * signal.  */
-    IDOS->Close(pfd);
+    IDOS->Close(*pfd);
     *pfd = 0;
   }
 }
@@ -1614,7 +1615,6 @@ static void kwsysProcessClosePipes(kwsysProcess* cp)
 int decc$set_child_standard_streams(int fd1, int fd2, int fd3);
 #endif
 
-#ifdef __amigaos4__
 /*--------------------------------------------------------------------------*/
 VOID amiga_finalCode(int32 return_code, kwsysProcess *cp)
 {
@@ -1848,9 +1848,6 @@ static void kwsysProcessDestroy(kwsysProcess* cp)
       }
     }
   }
-
-  /* Re-enable signals.  */
-  sigprocmask(SIG_SETMASK, &old_mask, 0);
 }
 
 static int kwsysProcessSetupOutputPipeFile(BPTR* p, const char* name)
@@ -2381,16 +2378,16 @@ static void kwsysProcessExit(void)
 
 void kwsysProcess_KillPID(unsigned long process_id)
 {
-  kwsysProcessKill((pid_t)process_id);
+  kwsysProcessKill((struct Process *)process_id);
 }
 
-static void kwsysProcessKill(pid_t process_id)
+static void kwsysProcessKill(struct Process * process_id)
 {
   /* Suspend the process to be sure it will not create more children.  */
-  kill(process_id, SIGSTOP);
+//  kill(process_id, SIGSTOP);
 
   /* Kill the process.  */
-  kill(process_id, SIGKILL);
+//  kill(process_id, SIGKILL);
 }
 
 /* Global set of executing processes for use by the signal handler.

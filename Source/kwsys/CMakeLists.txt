@@ -664,6 +664,9 @@ if(KWSYS_USE_Process)
   if(NOT UNIX)
     # Use the Windows implementation.
     set(KWSYS_C_SRCS ${KWSYS_C_SRCS} ProcessWin32.c)
+  elseif(AMIGA)
+    # Do da thang.
+    set(KWSYS_C_SRCS ${KWSYS_C_SRCS} ProcessAMIGA.c)
   else()
     # Use the UNIX implementation.
     set(KWSYS_C_SRCS ${KWSYS_C_SRCS} ProcessUNIX.c)

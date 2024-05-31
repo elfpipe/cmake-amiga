@@ -305,11 +305,8 @@ void cmProcess::OnTimeout()
     this->PipeReader.reset();
   }
   if (!this->ProcessHandleClosed) {
-#ifndef __amigaos4__
-printf("not possible to kill children in amiga\n");
     // Kill the child and let our on-exit handler finish the test.
     cmsysProcess_KillPID(static_cast<unsigned long>(this->Process->pid));
-#endif
   } else if (was_still_reading) {
     // Our on-exit handler already ran but did not finish the test
     // because we were still reading output.  We've just dropped
