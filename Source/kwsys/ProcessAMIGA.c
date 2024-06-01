@@ -246,7 +246,7 @@ static void kwsysProcessesSignalHandler(int signum, siginfo_t* info,
 static void kwsysProcessesSignalHandler(int signum);
 #endif
 #ifdef __amigaos4__
-static char * kwsysConvertUnixToAmigaPath(char *unixInput);
+static char * kwsysConvertUnixToAmigaPath(const char *unixInput);
 static BPTR kwsysAmigaOpenNativeFile(const char *path, int32 mode);
 #endif
 /* A structure containing results data for each process.  */
@@ -2845,7 +2845,7 @@ void kwsysProcess_ResetStartTime(kwsysProcess* cp)
 static char * kwsysConvertUnixToAmigaPath(const char *src)
 {
   char *dst = (char *)malloc(PATH_MAX);
-  iSrc = 0; iDest = 0;
+  int iSrc = 0; int iDest = 0;
   if(src[0] == '/') {
     iSrc++;
     while(src[iSrc] != '/') dst[iDest++] = src[iSrc++];
@@ -2859,7 +2859,7 @@ static char * kwsysConvertUnixToAmigaPath(const char *src)
       while(src[iSrc++] == '/') ;
       if(src[iSrc++] == '.') {
         if(src[iSrc++] == '.') dst[iDest++] = '/';
-        else if(src[iSrc] = '/') iSrc++;
+        else if(src[iSrc] == '/') iSrc++;
       }
     } else {
       dst[iDest++] = src[iSrc++];
