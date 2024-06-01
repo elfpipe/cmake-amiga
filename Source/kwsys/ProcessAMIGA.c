@@ -245,7 +245,10 @@ static void kwsysProcessesSignalHandler(int signum, siginfo_t* info,
 #else
 static void kwsysProcessesSignalHandler(int signum);
 #endif
-
+#ifdef __amigaos4__
+static char * kwsysConvertUnixToAmigaPath(char *unixInput);
+static BPTR kwsysAmigaOpenNativeFile(const char *path, int32 mode);
+#endif
 /* A structure containing results data for each process.  */
 typedef struct kwsysProcessResults_s kwsysProcessResults;
 struct kwsysProcessResults_s
@@ -388,7 +391,7 @@ kwsysProcess* kwsysProcess_New(void)
   memset(cp, 0, sizeof(kwsysProcess));
 
   /* Share stdin with the parent process by default.  */
-  cp->PipeSharedSTDIN = IDOS->DupFileHandle(IDOS->Input());
+  cp->PipeSharedSTDIN = 1;
 
   /* No native pipes by default.  */
   cp->PipeNativeSTDIN[0] = 0;
@@ -665,8 +668,8 @@ void kwsysProcess_SetPipeNative(kwsysProcess* cp, int prPipe, const int p[2])
     pPipeNative[0] = p[0];
     pPipeNative[1] = p[1];
   } else {
-    pPipeNative[0] = -1;
-    pPipeNative[1] = -1;
+    pPipeNative[0] = 0;
+    pPipeNative[1] = 0;
   }
 
   /* If we are using a native pipe, do not share it or redirect it to
@@ -876,17 +879,17 @@ void kwsysProcess_Execute(kwsysProcess* cp)
   /* Setup the stdin pipe for the first process.  */
   if (cp->PipeFileSTDIN) {
     /* Open a file for the child's stdin to read.  */
-    cp->PipeChildStd[0] = IDOS->Open(cp->PipeFileSTDIN, MODE_OLDFILE);
+    cp->PipeChildStd[0] = kwsysAmigaOpenNativeFile(cp->PipeFileSTDIN, MODE_OLDFILE);
     if (cp->PipeChildStd[0] == 0) {
       kwsysProcessCleanup(cp, 1);
       return;
     }
 
     /* Set close-on-exec flag on the pipe's end.  */
-    if (fcntl(cp->PipeChildStd[0], F_SETFD, FD_CLOEXEC) < 0) {
-      kwsysProcessCleanup(cp, 1);
-      return;
-    }
+    // if (fcntl(cp->PipeChildStd[0], F_SETFD, FD_CLOEXEC) < 0) {
+    //   kwsysProcessCleanup(cp, 1);
+    //   return;
+    // }
   } else if (cp->PipeSharedSTDIN) {
     cp->PipeChildStd[0] = IDOS->DupFileHandle(IDOS->Input());
   } else if (cp->PipeNativeSTDIN[0] != 0) {
@@ -895,13 +898,13 @@ void kwsysProcess_Execute(kwsysProcess* cp)
     /* Set close-on-exec flag on the pipe's ends.  The read end will
        be dup2-ed into the stdin descriptor after the fork but before
        the exec.  */
-    if ((fcntl(cp->PipeNativeSTDIN[0], F_SETFD, FD_CLOEXEC) < 0) ||
-        (fcntl(cp->PipeNativeSTDIN[1], F_SETFD, FD_CLOEXEC) < 0)) {
-      kwsysProcessCleanup(cp, 1);
-      return;
-    }
+    // if ((fcntl(cp->PipeNativeSTDIN[0], F_SETFD, FD_CLOEXEC) < 0) ||
+    //     (fcntl(cp->PipeNativeSTDIN[1], F_SETFD, FD_CLOEXEC) < 0)) {
+    //   kwsysProcessCleanup(cp, 1);
+    //   return;
+    // }
   } else {
-    cp->PipeChildStd[0] = -1;
+    cp->PipeChildStd[0] = 0;
   }
 
 
@@ -921,18 +924,18 @@ void kwsysProcess_Execute(kwsysProcess* cp)
     cp->PipeChildStd[1] = p[1];
 
     /* Set close-on-exec flag on the pipe's ends.  */
-    if ((fcntl(p[0], F_SETFD, FD_CLOEXEC) < 0) ||
-        (fcntl(p[1], F_SETFD, FD_CLOEXEC) < 0)) {
-      kwsysProcessCleanup(cp, 1);
-      return;
-    }
+    // if ((fcntl(p[0], F_SETFD, FD_CLOEXEC) < 0) ||
+    //     (fcntl(p[1], F_SETFD, FD_CLOEXEC) < 0)) {
+    //   kwsysProcessCleanup(cp, 1);
+    //   return;
+    // }
 
     /* Set to non-blocking in case select lies, or for the polling
        implementation.  */
-    if (!kwsysProcessSetNonBlocking(p[0])) {
-      kwsysProcessCleanup(cp, 1);
-      return;
-    }
+    // if (!kwsysProcessSetNonBlocking(p[0])) {
+    //   kwsysProcessCleanup(cp, 1);
+    //   return;
+    // }
   }
 
   if (cp->PipeFileSTDOUT) {
@@ -970,19 +973,19 @@ void kwsysProcess_Execute(kwsysProcess* cp)
     cp->PipeReadEnds[KWSYSPE_PIPE_STDERR] = p[0];
     cp->PipeChildStd[2] = p[1];
 
-    /* Set close-on-exec flag on the pipe's ends.  */
-    if ((fcntl(p[0], F_SETFD, FD_CLOEXEC) < 0) ||
-        (fcntl(p[1], F_SETFD, FD_CLOEXEC) < 0)) {
-      kwsysProcessCleanup(cp, 1);
-      return;
-    }
+    // /* Set close-on-exec flag on the pipe's ends.  */
+    // if ((fcntl(p[0], F_SETFD, FD_CLOEXEC) < 0) ||
+    //     (fcntl(p[1], F_SETFD, FD_CLOEXEC) < 0)) {
+    //   kwsysProcessCleanup(cp, 1);
+    //   return;
+    // }
 
     /* Set to non-blocking in case select lies, or for the polling
        implementation.  */
-    if (!kwsysProcessSetNonBlocking(p[0])) {
-      kwsysProcessCleanup(cp, 1);
-      return;
-    }
+    // if (!kwsysProcessSetNonBlocking(p[0])) {
+    //   kwsysProcessCleanup(cp, 1);
+    //   return;
+    // }
   }
 
   if (cp->PipeFileSTDERR) {
@@ -1032,16 +1035,16 @@ void kwsysProcess_Execute(kwsysProcess* cp)
         }
 
         /* Set close-on-exec flag on the pipe's ends.  */
-        if ((fcntl(p[0], F_SETFD, FD_CLOEXEC) < 0) ||
-            (fcntl(p[1], F_SETFD, FD_CLOEXEC) < 0)) {
-          close(p[0]);
-          close(p[1]);
-          if (nextStdIn != cp->PipeChildStd[0]) {
-            kwsysProcessCleanupDescriptor(&nextStdIn);
-          }
-          kwsysProcessCleanup(cp, 1);
-          return;
-        }
+        // if ((fcntl(p[0], F_SETFD, FD_CLOEXEC) < 0) ||
+        //     (fcntl(p[1], F_SETFD, FD_CLOEXEC) < 0)) {
+        //   close(p[0]);
+        //   close(p[1]);
+        //   if (nextStdIn != cp->PipeChildStd[0]) {
+        //     kwsysProcessCleanupDescriptor(&nextStdIn);
+        //   }
+        //   kwsysProcessCleanup(cp, 1);
+        //   return;
+        // }
         nextStdIn = p[0];
         si.StdOut = p[1];
       }
@@ -1417,6 +1420,7 @@ void kwsysProcess_Interrupt(kwsysProcess* cp)
           /* The user created a process group for this process.  The group ID
              is the process ID for the original process in the group.  */
           // kill(-cp->ForkPIDs[i], SIGINT);
+          IExec->Signal((struct Task *)cp->ForkPIDs[i], SIGBREAKF_CTRL_C);
         }
       }
     }
@@ -1427,6 +1431,7 @@ void kwsysProcess_Interrupt(kwsysProcess* cp)
        a special group, this is not an option on Windows.  Therefore, we kill
        the current process group for consistency with Windows.  */
 //    kill(0, SIGINT);
+// ??
   }
 }
 
@@ -1477,7 +1482,6 @@ void kwsysProcess_Kill(kwsysProcess* cp)
   cp->CommandsLeft = 0;
 }
 
-// #ifndef __amigaos4__
 /* Call the free() function with a pointer to volatile without causing
    compiler warnings.  */
 static void kwsysProcessVolatileFree(volatile void* p)
@@ -1493,7 +1497,6 @@ static void kwsysProcessVolatileFree(volatile void* p)
 #  pragma clang diagnostic pop
 #endif
 }
-// #endif
 
 /* Initialize a process control structure for kwsysProcess_Execute.  */
 static int kwsysProcessInitialize(kwsysProcess* cp)
@@ -1605,7 +1608,7 @@ static void kwsysProcessCleanup(kwsysProcess* cp, int error)
 
           /* Reap the child.  Keep trying until the call is not
              interrupted.  */
-        //  IExec->Wait(SIGF_CHILD|SIGBREAKF_CTRL_C);
+         IExec->Wait(SIGF_CHILD|SIGBREAKF_CTRL_C);
         }
         waitchildren();
       }
@@ -1639,11 +1642,9 @@ static void kwsysProcessCleanup(kwsysProcess* cp, int error)
   for (i = 0; i < KWSYSPE_PIPE_COUNT; ++i) {
     kwsysProcessCleanupDescriptor(&cp->PipeReadEnds[i]);
   }
-// #ifndef __amigaos4__
   for (i = 0; i < 3; ++i) {
     kwsysProcessCleanupDescriptor(&cp->PipeChildStd[i]);
   }
-// #endif
 }
 
 /* Close the given file descriptor if it is open.  Reset its value to -1.  */
@@ -1673,12 +1674,13 @@ static void kwsysProcessClosePipes(kwsysProcess* cp)
 
 static int kwsysProcessSetNonBlocking(BPTR _fd)
 {
-  int fd = (int)_fd;
-  int flags = fcntl(fd, F_GETFL);
-  if (flags >= 0) {
-    flags = fcntl(fd, F_SETFL, flags | O_NONBLOCK);
-  }
-  return flags >= 0;
+  // int fd = (int)_fd;
+  // int flags = fcntl(fd, F_GETFL);
+  // if (flags >= 0) {
+  //   flags = fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+  // }
+  // return flags >= 0;
+  return 1;
 }
 
 #if defined(__VMS)
@@ -1762,6 +1764,25 @@ static int kwsysDoCreateNewProcess(kwsysProcess* cp, int prIndex,
 
 	int closestdin = TRUE, closestdout = TRUE, closestderr = TRUE;
 
+	if(si->StdIn == 0)
+		si->StdIn = IDOS->Open("NIL:", MODE_OLDFILE);
+	if(si->StdIn == IDOS->Input())
+		closestdin = FALSE;
+
+	if(si->StdOut == 0)
+		si->StdOut = IDOS->Open("NIL:", MODE_OLDFILE);
+	if(si->StdOut == IDOS->Output())
+		closestdout = FALSE;
+
+	if(si->StdErr == 0)
+		si->StdErr = IDOS->Open("NIL:", MODE_OLDFILE);
+	if(si->StdErr == IDOS->ErrorOutput())
+		closestderr = FALSE;
+
+	// VOID (*finalCode)(int32, kwsysProcess *);	
+	// if(prIndex == 0)
+	// 	finalCode = amiga_finalCode;
+
 	struct Task *me = IExec->FindTask(NULL);
 
 	cp->ForkPIDs[prIndex] = IDOS->CreateNewProcTags(
@@ -1771,14 +1792,13 @@ static int kwsysDoCreateNewProcess(kwsysProcess* cp, int prIndex,
 							NP_Cli,			TRUE,
 							NP_Child,		TRUE,
 							NP_NotifyOnDeathSigTask, me,
-#if 0
-							NP_Input,		IDOS->Input(),
-							NP_CloseInput,	FALSE,
-							NP_Output,		IDOS->Output(),
-							NP_CloseOutput,	FALSE,
-							NP_Error,		IDOS->ErrorOutput(),
-							NP_CloseError,	FALSE,
-#else
+
+							// NP_Input,		IDOS->Input(),
+							// NP_CloseInput,	FALSE,
+							// NP_Output,		IDOS->Output(),
+							// NP_CloseOutput,	FALSE,
+							// NP_Error,		IDOS->ErrorOutput(),
+							// NP_CloseError,	FALSE,
 
 							NP_Input,		si->StdIn,
 							NP_CloseInput,	closestdin,
@@ -1786,7 +1806,7 @@ static int kwsysDoCreateNewProcess(kwsysProcess* cp, int prIndex,
 							NP_CloseOutput,	closestdout,
 							NP_Error,		si->StdErr,
 							NP_CloseError,	closestderr,
-#endif
+
 							NP_FinalCode,	amiga_finalCode,
 							NP_FinalData,	cp,
 
@@ -1829,14 +1849,14 @@ static int kwsysProcessCreate(kwsysProcess* cp, int prIndex,
   }
 
   /* Set close-on-exec flag on the pipe's write end.  */
-  if (fcntl(si->ErrorPipe[1], F_SETFD, FD_CLOEXEC) < 0 ||
-      fcntl(pgidPipe[1], F_SETFD, FD_CLOEXEC) < 0) {
-    kwsysProcessCleanupDescriptor(&si->ErrorPipe[0]);
-    kwsysProcessCleanupDescriptor(&si->ErrorPipe[1]);
-    kwsysProcessCleanupDescriptor(&pgidPipe[0]);
-    kwsysProcessCleanupDescriptor(&pgidPipe[1]);
-    return 0;
-  }
+  // if (fcntl(si->ErrorPipe[1], F_SETFD, FD_CLOEXEC) < 0 ||
+  //     fcntl(pgidPipe[1], F_SETFD, FD_CLOEXEC) < 0) {
+  //   kwsysProcessCleanupDescriptor(&si->ErrorPipe[0]);
+  //   kwsysProcessCleanupDescriptor(&si->ErrorPipe[1]);
+  //   kwsysProcessCleanupDescriptor(&pgidPipe[0]);
+  //   kwsysProcessCleanupDescriptor(&pgidPipe[1]);
+  //   return 0;
+  // }
 
   /* Block SIGINT / SIGTERM while we start.  The purpose is so that our signal
      handler doesn't get called from the child process after the fork and
@@ -1966,15 +1986,15 @@ static int kwsysProcessSetupOutputPipeFile(BPTR* p, const char* name)
   kwsysProcessCleanupDescriptor(p);
 
   /* Open a file for the pipe to write.  */
-  if ((fout = IDOS->Open(name, MODE_NEWFILE)) < 0)
+  if ((fout = kwsysAmigaOpenNativeFile(name, MODE_NEWFILE)) == 0)
   {
     return 0;
   }
 
-  if (fcntl(fout, F_SETFD, FD_CLOEXEC) < 0) {
-    close(fout);
-    return 0;
-  }
+  // if (fcntl(fout, F_SETFD, FD_CLOEXEC) < 0) {
+  //   close(fout);
+  //   return 0;
+  // }
 
   /* Assign the replacement descriptor.  */
   *p = fout;
@@ -2557,10 +2577,10 @@ static int kwsysProcessesAdd(kwsysProcess* cp)
 
     /* The children do not need this pipe.  Set close-on-exec flag on
        the pipe's ends.  */
-    if ((fcntl(p[0], F_SETFD, FD_CLOEXEC) < 0) ||
-        (fcntl(p[1], F_SETFD, FD_CLOEXEC) < 0)) {
-      return 0;
-    }
+    // if ((fcntl(p[0], F_SETFD, FD_CLOEXEC) < 0) ||
+    //     (fcntl(p[1], F_SETFD, FD_CLOEXEC) < 0)) {
+    //   return 0;
+    // }
  }
 
   /* Attempt to add the given signal pipe to the signal handler set.  */
@@ -2720,9 +2740,9 @@ static void kwsysProcessesSignalHandler(int signum
         char buf = 1;
         kwsysProcess* cp = kwsysProcesses.Processes[i];
         kwsysProcess_ssize_t pipeStatus =
-          read(cp->PipeReadEnds[KWSYSPE_PIPE_SIGNAL], &buf, 1);
+          IDOS->Read(cp->PipeReadEnds[KWSYSPE_PIPE_SIGNAL], &buf, 1);
         (void)pipeStatus;
-        pipeStatus = write(cp->SignalPipe, &buf, 1);
+        pipeStatus = IDOS->Write(cp->SignalPipe, &buf, 1);
         (void)pipeStatus;
       }
       break;
@@ -2743,14 +2763,17 @@ static void kwsysProcessesSignalHandler(int signum
                  ID
                  is the process ID for the original process in the group.  */
               // kill(-cp->ForkPIDs[j], SIGINT);
+              IExec->Signal((struct Task *)cp->ForkPIDs[j], SIGBREAKF_CTRL_C);
             }
           }
         }
       }
 
+//AMIGAAA wait vfork waitpid SA_NOCLDSTOP SA_SIGINFO
       // /* Wait for all processes to terminate.  */
       // while (wait(&procStatus) >= 0 || errno != ECHILD) {
       // }
+      waitchildren();
 
       /* Terminate the process, which is now in an inconsistent state
          because we reaped all the PIDs that it may have been reaping
@@ -2817,4 +2840,38 @@ void kwsysProcess_ResetStartTime(kwsysProcess* cp)
   }
   /* Reset start time. */
   cp->StartTime = kwsysProcessTimeGetCurrent();
+}
+
+static char * kwsysConvertUnixToAmigaPath(const char *src)
+{
+  char *dst = (char *)malloc(PATH_MAX);
+  iSrc = 0; iDest = 0;
+  if(src[0] == '/') {
+    iSrc++;
+    while(src[iSrc] != '/') dst[iDest++] = src[iSrc++];
+    dst[iDest++] = ':';
+    iSrc++;
+  }
+
+  while(src[iSrc] != '\0') {
+    if(src[iSrc++] == '/') {
+      dst[iDest++] = '/';
+      while(src[iSrc++] == '/') ;
+      if(src[iSrc++] == '.') {
+        if(src[iSrc++] == '.') dst[iDest++] = '/';
+        else if(src[iSrc] = '/') iSrc++;
+      }
+    } else {
+      dst[iDest++] = src[iSrc++];
+    }
+  }
+  return dst;
+}
+
+static BPTR kwsysAmigaOpenNativeFile(const char *path, int32 mode)
+{
+  char *amigaPath = kwsysConvertUnixToAmigaPath(path);
+  BPTR result = IDOS->Open(amigaPath, mode);
+  free(amigaPath);
+  return result;
 }

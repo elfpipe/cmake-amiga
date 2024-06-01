@@ -2225,7 +2225,9 @@ static void kwsysProcessDestroy(kwsysProcess* cp)
   for (i = 0; i < cp->NumberOfCommands; ++i) {
     if (cp->ForkPIDs[i]) {
       int result;
-#ifndef __amigaos4__
+#ifdef __amigaos4__
+waitchildren();
+#else
       while (((result = waitpid(cp->ForkPIDs[i], &cp->CommandExitCodes[i],
                                 WNOHANG)) < 0) &&
              (errno == EINTR)) {
