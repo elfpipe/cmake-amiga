@@ -2846,20 +2846,23 @@ static char * kwsysConvertUnixToAmigaPath(const char *src)
 {
   char *dst = (char *)malloc(PATH_MAX);
   int iSrc = 0; int iDest = 0;
+  int skipSlash = 0;
   if(src[0] == '/') {
     iSrc++;
     while(src[iSrc] != '/') dst[iDest++] = src[iSrc++];
     dst[iDest++] = ':';
-    iSrc++;
+    skipSlash = 1;
   }
 
   while(src[iSrc] != '\0') {
-    if(src[iSrc++] == '/') {
-      dst[iDest++] = '/';
-      while(src[iSrc++] == '/') ;
-      if(src[iSrc++] == '.') {
-        if(src[iSrc++] == '.') dst[iDest++] = '/';
-        else if(src[iSrc] == '/') iSrc++;
+    if(src[iSrc] == '/') {
+      if(!skipSlash) dst[iDest++] = '/';
+      skipSlash = 0;
+      while(src[++iSrc] == '/') ;
+      if(src[iSrc] == '.') {
+        if(src[++iSrc] == '.' && src[iSrc+1] == '/') {
+            dst[iDest++] = '/'; skipSlash = 1; iSrc++; }
+        else if(src[iSrc] == '/') { skipSlash = 1; }
       }
     } else {
       dst[iDest++] = src[iSrc++];
