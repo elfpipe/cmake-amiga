@@ -102,7 +102,7 @@ __FBSDID("$FreeBSD$");
 #include "archive_private.h"
 #include "archive_read_disk_private.h"
 
-#if !defined(HAVE_FCHDIR) && !defined(__amigaos4__)
+#if !defined(HAVE_FCHDIR)
 #error fchdir function required.
 #endif
 #ifndef O_BINARY
@@ -117,12 +117,6 @@ __FBSDID("$FreeBSD$");
 #define HAVE_DIRFD
 #endif
 
-#ifdef __amigaos4__
-int fchdir(int fildes) {
-	printf("fchdir not implemented on amiga\n");
-	return -1;
-}
-#endif
 /*-
  * This is a new directory-walking system that addresses a number
  * of problems I've had with fts(3).  In particular, it has no

@@ -1716,30 +1716,33 @@ VOID amiga_finalCode(int32 return_code, kwsysProcess *cp)
 static int kwsysDoCreateNewProcess(kwsysProcess* cp, int prIndex,
                               kwsysProcessCreateInformation* si)
 {
-    char temp[1024],filename[4096];
-	strcpy(temp, cp->Commands[prIndex][0]);
-	if(temp[0] == '/')
-	{
-		char *tok = strtok(temp, "/");
-		strcpy(filename, tok);
-		strlcat(filename, ":", sizeof(filename));
-		tok = strtok(NULL,"/");
-		if(tok != NULL)
-		{
-			strlcat(filename, tok, sizeof(filename));
-			tok = strtok(NULL, "/");
-			while (tok != NULL)
-			{
-				strlcat(filename, "/", sizeof(filename));
-				strlcat(filename, tok, sizeof(filename));
-				tok = strtok(NULL, "/");
-			}
-		}
-	}
-	else
-		strcpy(filename, temp);
+  //   char temp[1024],filename[4096];
+	// strcpy(temp, cp->Commands[prIndex][0]);
+	// if(temp[0] == '/')
+	// {
+	// 	char *tok = strtok(temp, "/");
+	// 	strcpy(filename, tok);
+	// 	strlcat(filename, ":", sizeof(filename));
+	// 	tok = strtok(NULL,"/");
+	// 	if(tok != NULL)
+	// 	{
+	// 		strlcat(filename, tok, sizeof(filename));
+	// 		tok = strtok(NULL, "/");
+	// 		while (tok != NULL)
+	// 		{
+	// 			strlcat(filename, "/", sizeof(filename));
+	// 			strlcat(filename, tok, sizeof(filename));
+	// 			tok = strtok(NULL, "/");
+	// 		}
+	// 	}
+	// }
+	// else
+	// 	strcpy(filename, temp);
+
+  char *filename = kwsysConvertUnixToAmigaPath(cp->Commands[prIndex][0]);
 
 	BPTR seglist = IDOS->LoadSeg(filename);
+  free(filename);
 	if (!seglist)
 		return 0;
 
@@ -1817,13 +1820,10 @@ static int kwsysDoCreateNewProcess(kwsysProcess* cp, int prIndex,
 	{
 		return 0;
 	}
-
-    /* A child has been created.  */
-    ++cp->CommandsLeft;
  
 	IDOS->Delay(20);  //if we don't give time for child process to start up, we get trouble. Reason unknown.
 
-    return 1;
+  return 1;
 }
 
 static int kwsysProcessCreate(kwsysProcess* cp, int prIndex,
@@ -2846,19 +2846,20 @@ static char * kwsysConvertUnixToAmigaPath(const char *src)
 {
   char *dst = (char *)malloc(PATH_MAX);
   int iSrc = 0; int iDest = 0;
-  int skipSlash = 0;
+  int skipSlash = 0; int first = 1;
   if(src[0] == '/') {
     iSrc++;
     while(src[iSrc] != '/') dst[iDest++] = src[iSrc++];
     dst[iDest++] = ':';
-    skipSlash = 1;
+    skipSlash = 1; first = 0;
   }
 
   while(src[iSrc] != '\0') {
-    if(src[iSrc] == '/') {
-      if(!skipSlash) dst[iDest++] = '/';
+    if(src[iSrc] == '/' || first) {
+      if(!skipSlash && !first) dst[iDest++] = '/';
       skipSlash = 0;
-      while(src[++iSrc] == '/') ;
+      if(!first) while(src[++iSrc] == '/') ;
+      first = 0;
       if(src[iSrc] == '.') {
         if(src[++iSrc] == '.' && src[iSrc+1] == '/') {
             dst[iDest++] = '/'; skipSlash = 1; iSrc++; }
