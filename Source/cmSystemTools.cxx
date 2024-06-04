@@ -2532,6 +2532,7 @@ static std::string cmSystemToolsCMakeRoot;
 static std::string cmSystemToolsHTMLDoc;
 void cmSystemTools::FindCMakeResources(const char* argv0)
 {
+  printf("argv0 = \"%s\"\n", argv0);
   std::string exe_dir;
 #if defined(_WIN32) && !defined(__CYGWIN__)
   (void)argv0; // ignore this on windows

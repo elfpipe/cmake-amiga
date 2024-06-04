@@ -2842,7 +2842,7 @@ void kwsysProcess_ResetStartTime(kwsysProcess* cp)
   cp->StartTime = kwsysProcessTimeGetCurrent();
 }
 
-static char * kwsysConvertUnixToAmigaPath(const char *src)
+char * kwsysConvertUnixToAmigaPath(const char *src)
 {
   char *dst = (char *)malloc(PATH_MAX);
   int iSrc = 0; int iDest = 0;

@@ -4368,7 +4368,7 @@ bool SystemTools::GetLineFromStream(
 int SystemTools::GetTerminalWidth()
 {
   int width = -1;
-#if defined(HAVE_TTY_INFO) && !defined(__amigaos4__)
+#if defined(HAVE_TTY_INFO)
   struct winsize ws;
   std::string columns; /* Unix98 environment variable */
   if (ioctl(1, TIOCGWINSZ, &ws) != -1 && ws.ws_col > 0 && ws.ws_row > 0) {

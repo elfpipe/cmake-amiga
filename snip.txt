@@ -17,3 +17,10 @@ cmake \
 
 
 -use-dynld 
+
+
+#elif defined(__amigaos4__)
+  if(path.find_first_of(':') != string::npos) {
+    SystemTools::ReplaceString(path, ":", "/");
+    path.insert(0, 1, '/');
+  }
