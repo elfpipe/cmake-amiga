@@ -54,19 +54,6 @@ Encoding::CommandLineArguments Encoding::CommandLineArguments::Main(
   }
   LocalFree(w_av);
   return CommandLineArguments(ac, &av2[0]);
-#elif defined(__amigaos4__) //initially, arguments to main() don't take .unix/-lunix into account
-  std::string path(argv[0]);
-  if(path.find_first_of(':') != std::string::npos) {
-    SystemTools::ReplaceString(path, ":", "/");
-    path.insert(0, 1, '/');
-  }
-  std::vector<std::string> av1(argc);
-  std::vector<char const*> av2(argc);
-  for (int i = 0; i < argc; i++) {
-    av1[i] = argv[i];
-    av2[i] = av1[i].c_str();
-  }
-  return CommandLineArguments(argc, &av2[0]);  
 #else
   return CommandLineArguments(argc, argv);
 #endif

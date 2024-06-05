@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "*.in": "c",
-        "internal.h": "c"
+        "internal.h": "c",
+        "configure.hxx": "c",
+        "configure.h": "c"
     }
 }

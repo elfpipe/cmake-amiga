@@ -36,9 +36,6 @@ extern "C" {
 #define IS_PTR_ALIGNED_BY(ptr, align) IS_SIZE_ALIGNED_BY((uintptr_t)(ptr), (align))
 
 /* define rhash_aligned_alloc() and rhash_aligned_free() */
-#ifdef __amigaos4__
-#define NO_POSIX_ALIGNED_ALLOC
-#endif
 #if !defined(NO_WIN32_ALIGNED_ALLOC) && defined(_WIN32)
 
 # define HAS_WIN32_ALIGNED_ALLOC

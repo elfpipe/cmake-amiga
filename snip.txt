@@ -10,17 +10,12 @@ cmake \
 -DCMAKE_C_FLAGS_INIT="-mcrt=clib4 -athread=native" \
 -DCMAKE_EXE_LINKER_FLAGS="-lauto" \
 -DUNIX=1 -DAMIGA=1 \
+-DCMAKE_CROSSCOMPILING=1 \
 -DCMAKE_INSTALL_PREFIX="/cmake-amiga" \
--DQT_HOST_PATH="/usr/local/Qt-6.2.0" \
--DQt6_DIR=/qt6-amiga \
 ..
 
 
--use-dynld 
 
-
-#elif defined(__amigaos4__)
-  if(path.find_first_of(':') != string::npos) {
-    SystemTools::ReplaceString(path, ":", "/");
-    path.insert(0, 1, '/');
-  }
+# for BUILD_QtDialog :
+# -DQT_HOST_PATH="/usr/local/Qt-6.2.0" \
+# -DQt6_DIR=/qt6-amiga \

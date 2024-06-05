@@ -1025,7 +1025,7 @@ void cmSystemTools::InitializeLibUV()
 #endif
 }
 
-#if defined(_WIN32) || defined(__amigaos4__)
+#if defined(_WIN32)
 #  include <random>
 
 #  include <wctype.h>
@@ -1081,7 +1081,7 @@ cmsys::Status cmSystemTools::MakeTempDirectory(char* path, const mode_t* mode)
     ++sep;
   }
 
-#if defined(_WIN32) || defined(__amigaos4__)
+#if defined(_WIN32)
   const int nchars = 36;
   const char chars[nchars + 1] = "abcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -1093,11 +1093,7 @@ cmsys::Status cmSystemTools::MakeTempDirectory(char* path, const mode_t* mode)
     for (auto n = l - 6; n < l; ++n) {
       path[n] = chars[dist(rg)];
     }
-#ifdef __amigaos4__
-    if (mkdir(path, *mode) == 0) {
-#else
     if (Mkdir(path, mode) == 0) {
-#endif
       return cmsys::Status::Success();
     } else if (errno != EEXIST) {
       return cmsys::Status::POSIX_errno();
@@ -2532,7 +2528,6 @@ static std::string cmSystemToolsCMakeRoot;
 static std::string cmSystemToolsHTMLDoc;
 void cmSystemTools::FindCMakeResources(const char* argv0)
 {
-  printf("argv0 = \"%s\"\n", argv0);
   std::string exe_dir;
 #if defined(_WIN32) && !defined(__CYGWIN__)
   (void)argv0; // ignore this on windows
@@ -2580,7 +2575,12 @@ void cmSystemTools::FindCMakeResources(const char* argv0)
 #else
   std::string errorMsg;
   std::string exe;
+#ifdef __amigaos4__
+  // on amiga, we will require a fixed path to avoid issues with path resolution
+  if (cmSystemTools::FindProgramPath("/cmake-amiga/bin/cmake", exe, errorMsg)) {
+#else
   if (cmSystemTools::FindProgramPath(argv0, exe, errorMsg)) {
+#endif
     // remove symlinks
     exe = cmSystemTools::GetRealPath(exe);
     exe_dir = cmSystemTools::GetFilenamePath(exe);

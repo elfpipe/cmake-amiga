@@ -305,7 +305,7 @@ static int test9_grandchild(int argc, const char* argv[])
   if (!SetConsoleCtrlHandler(test9_grandchild_handler, TRUE)) {
     return 1;
   }
-#elif defined(__amigaos4__)
+// #elif defined(__amigaos4__)
 #else
   struct sigaction sa;
   memset(&sa, 0, sizeof(sa));
@@ -406,9 +406,7 @@ static int runChild2(kwsysProcess* kp, const char* cmd[], int state,
 
   if (interruptDelay) {
     testProcess_sleep(interruptDelay);
-#ifndef __amigaos4__
     kwsysProcess_Interrupt(kp);
-#endif
   }
 
   if (!share && !disown) {

@@ -1,12 +1,5 @@
 #include "cmStandardLexer.h"
 
-#ifdef __amigaos4__
-//#include <string.h> //strdup
-extern "C" {
-	char 	*strdup (const char *);
-}
-#endif
-
 #define FLEXINT_H 1
 #define  YY_INT_ALIGNED short int
 
