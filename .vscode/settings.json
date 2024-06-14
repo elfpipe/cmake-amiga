@@ -4,5 +4,6 @@
         "internal.h": "c",
         "configure.hxx": "c",
         "configure.h": "c"
-    }
+    },
+    "C_Cpp.dimInactiveRegions": false
 }
