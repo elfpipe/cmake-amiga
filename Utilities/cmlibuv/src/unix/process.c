@@ -94,10 +94,12 @@ static void uv__chld(uv_signal_t* handle, int signum) {
 }
 #endif
 
-#ifdef __amigaos4__
+#include <proto/exec.h>
+#if 0 //def __amigaos4__
 #include "clib4.h"
 #include "clib4interface.h"
 void uv__clib4_wait_children(uv_loop_t* loop, struct Clib4IFace *sigIClib4) {
+IExec->DebugPrintF("uv__clib4_wait_children() - loop : 0x%x - sigIClib4 : 0x%x\n", loop, sigIClib4);
 #else
 void uv__wait_children(uv_loop_t* loop) {
 #endif
@@ -129,8 +131,12 @@ void uv__wait_children(uv_loop_t* loop) {
 #endif
 
     do
-#ifdef __amigaos4__
+#if 0 //def __amigaos4__
+    {
+      IExec->DebugPrintF("Calling waitpid on pid %d...\n", process->pid);
       pid = sigIClib4->waitpid(process->pid, &status, options);
+      IExec->DebugPrintF("waitpid returned : %d\n", pid);
+    }
 #else
       pid = waitpid(process->pid, &status, options);
 #endif
@@ -149,6 +155,7 @@ void uv__wait_children(uv_loop_t* loop) {
       continue;
     }
 
+IExec->DebugPrintF("assert(%d == %d).\n", pid, process->pid);
     assert(pid == process->pid);
     process->status = status;
     QUEUE_REMOVE(&process->queue);
@@ -158,6 +165,7 @@ void uv__wait_children(uv_loop_t* loop) {
   h = &pending;
   q = QUEUE_HEAD(h);
   while (q != h) {
+IExec->DebugPrintF("Second loop.\n");
     process = QUEUE_DATA(q, uv_process_t, queue);
     q = QUEUE_NEXT(q);
 
@@ -872,21 +880,32 @@ struct ExitMessage {
 VOID amiga_FinalCode(int32 return_code, int32 final_data)
 {
   struct FinalData *fd = (struct FinalData *)final_data;
-  struct ExitMessage *dm = (struct ExitMessage*)IExec->AllocVecTags(sizeof(struct ExitMessage), TAG_DONE);
-  struct Process *me = IExec->FindTask(NULL);
-  dm->pid = (pid_t)me->pr_ProcessID;
-  dm->returnCode = return_code;
-  dm->loop = fd->loop;
-  dm->exit = FALSE;
+  // struct ExitMessage *dm = (struct ExitMessage*)IExec->AllocVecTags(sizeof(struct ExitMessage), TAG_DONE);
+  // struct Process *me = IExec->FindTask(NULL);
+  // dm->pid = (pid_t)me->pr_ProcessID;
+  // dm->returnCode = return_code;
+  // dm->loop = fd->loop;
+  // dm->exit = FALSE;
 
-  IExec->DebugPrintF("port : 0x%x\n", fd->port);
+  // IExec->DebugPrintF("port : 0x%x\n", fd->port);
 
-  IExec->DebugPrintF("Sending message to ChildWather.\n");
-  IExec->PutMsg(fd->port, (struct Message*)dm);
-  IExec->DebugPrintF("Message sent.\n");
-  // uv__wait_children(fd->loop);
-  // free(fd); where to do this?
+  // IExec->DebugPrintF("Sending message to ChildWather.\n");
+  // IExec->PutMsg(fd->port, (struct Message*)dm);
+  // IExec->DebugPrintF("Message sent.\n");
+  uv__wait_children(fd->loop);
+
+  IExec->FreeVec(fd);
+  IExec->DebugPrintF("Child exiting.\n");
 }
+static struct MsgPort *watcherMsgPort = 0;
+void endChildWatcherThread() {
+  if(watcherMsgPort) {
+    struct ExitMessage *dm = (struct ExitMessage*)IExec->AllocVecTags(sizeof(struct ExitMessage), TAG_DONE);
+    dm->exit = TRUE;
+    IExec->PutMsg(watcherMsgPort, dm);
+  }
+}
+void __attribute__((destructor)) endChildWatcherThread(); 
 struct SigChildHandlerData {
   struct MsgPort *port;
   int8 readySignal;
@@ -912,11 +931,14 @@ int32 amiga_SigChildHandler(STRPTR args, int32 length, APTR execbase)
     IExec->DebugPrintF("Message received in ChildHandler.\n");
     struct ExitMessage *em = sigIExec->GetMsg(schd->port);
     while(em) {
-      if(em->exit) { done = TRUE; break; }
-      else uv__clib4_wait_children(em->loop, sigIClib4);
+      if(!done && em->exit) { done = TRUE; }
+      // else uv__clib4_wait_children(em->loop, sigIClib4);
+      IExec->FreeVec(em);
       em = sigIExec->GetMsg(schd->port);
     }
   }
+  sigIExec->DebugPrintF("Watcher thread received exit message. Closing down.\n");
+  sigIExec->FreeSysObject(ASOT_PORT, schd->port);
   sigIExec->FreeVec(schd);
   sigIExec->DropInterface(sigIClib4);
   sigIExec->CloseLibrary(sigClib4Base);
@@ -947,7 +969,7 @@ static struct MsgPort * amiga_StartChildWatcher()
       TAG_DONE
     );
     IExec->Wait(1 << schd->readySignal);
-    printf("ReadySignal received from ChildWatcher : 0x%x\n", p);
+    printf("ReadySignal received from ChildWatcher.\n%x\nport : 0x%x\n", p, port);
     IExec->FreeSignal(schd->readySignal);
     port = schd->port;
   }
@@ -1029,12 +1051,13 @@ static int uv__do_create_new_process_amiga(uv_loop_t* loop,
   ed->signal = IExec->AllocSignal(-1);
   ed->mainTask = me;
 
-  struct FinalData *fd = (struct FinalData*)malloc(sizeof(struct FinalData));
+  struct FinalData *fd = (struct FinalData*)IExec->AllocVecTags(sizeof(struct FinalData), 0);
   // fd->options = options;
   // fd->port = ??
   fd->loop = loop;
   struct MsgPort *port = amiga_StartChildWatcher();
   fd->port = port;
+  watcherMsgPort = port;
   IExec->DebugPrintF("port : 0x%x\n", port);
 
   struct Process *process = IDOS->CreateNewProcTags(
@@ -1067,7 +1090,7 @@ static int uv__do_create_new_process_amiga(uv_loop_t* loop,
 
 	if (process == 0) {
     free(ed);
-    free(fd);
+    IExec->FreeVec(fd);
     for(int i = 0; i < 3; i++)
       if(closefh[i]) IDOS->Close(iofh[i]);
 		return -1;
@@ -1348,11 +1371,18 @@ int uv_spawn(uv_loop_t* loop,
       loop->flags |= UV_LOOP_REAP_CHILDREN;
     }
 #endif
+#ifdef __amigaos4__
+    process->flags |= UV_HANDLE_REAP;
+    loop->flags |= UV_LOOP_REAP_CHILDREN;
+#endif
 
     process->pid = pid;
     process->exit_cb = options->exit_cb;
     QUEUE_INSERT_TAIL(&loop->process_handles, &process->queue);
     uv__handle_start(process);
+#ifdef __amigaos4__
+IExec->DebugPrintF("New process added to process queue.\nloop : 0x%x\n", loop);
+#endif
   }
 
   for (i = 0; i < options->stdio_count; i++) {
