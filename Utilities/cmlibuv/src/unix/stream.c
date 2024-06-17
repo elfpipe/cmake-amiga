@@ -89,7 +89,12 @@ void uv__stream_init(uv_loop_t* loop,
   stream->write_queue_size = 0;
 
   if (loop->emfile_fd == -1) {
+#ifdef __amigaos4__
+    err = uv__open_cloexec("NIL:", O_RDONLY);
+    printf("[A] opened fd on NIL: with /no %d\n", err);
+#else
     err = uv__open_cloexec("/dev/null", O_RDONLY);
+#endif
     if (err < 0)
         /* In the rare case that "/dev/null" isn't mounted open "/"
          * instead.
@@ -1075,7 +1080,10 @@ static int uv__stream_recv_cmsg(uv_stream_t* stream, struct msghdr* msg) {
 # pragma clang diagnostic ignored "-Wvla-extension"
 #endif
 
+#include <proto/exec.h>
+
 static void uv__read(uv_stream_t* stream) {
+IExec->DebugPrintF("[A] uv__read\n");
   uv_buf_t buf;
   ssize_t nread;
   struct msghdr msg;
@@ -1090,6 +1098,8 @@ static void uv__read(uv_stream_t* stream) {
    * we can read it. XXX Need to rearm fd if we switch to edge-triggered I/O.
    */
   count = 32;
+
+IExec->DebugPrintF("[A] stream->type == 0x%x\n", stream->type);
 
   is_ipc = stream->type == UV_NAMED_PIPE && ((uv_pipe_t*) stream)->ipc;
 
@@ -1113,6 +1123,7 @@ static void uv__read(uv_stream_t* stream) {
     assert(uv__stream_fd(stream) >= 0);
 
     if (!is_ipc) {
+IExec->DebugPrintF("[A] Stream is an UV_NAMED_PIPE.\n");
       do {
         nread = read(uv__stream_fd(stream), buf.base, buf.len);
       }
@@ -1134,6 +1145,7 @@ static void uv__read(uv_stream_t* stream) {
       while (nread < 0 && errno == EINTR);
     }
 
+IExec->DebugPrintF("[A] **************** nread == %d\n", nread);
     if (nread < 0) {
       /* Error */
       if (errno == EAGAIN || errno == EWOULDBLOCK) {

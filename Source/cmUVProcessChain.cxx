@@ -317,6 +317,7 @@ bool cmUVProcessChain::InternalData::Prepare(
   return true;
 }
 
+#include <proto/exec.h>
 void cmUVProcessChain::InternalData::SpawnProcess(
   std::size_t index,
   const cmUVProcessChainBuilder::ProcessConfiguration& config, bool first,
@@ -371,6 +372,7 @@ void cmUVProcessChain::InternalData::SpawnProcess(
     processData->ProcessStatus.ExitStatus = exitStatus;
     processData->ProcessStatus.TermSignal = termSignal;
     processData->Finish();
+                        IExec->DebugPrintF("[?][B] **************************** exit_cb\n");
   };
 
   if ((process.ProcessStatus.SpawnResult =
@@ -469,6 +471,7 @@ const cmUVProcessChain::Status& cmUVProcessChain::GetStatus(
 
 bool cmUVProcessChain::Finished() const
 {
+  IExec->DebugPrintF("Finished() : ProcessesCompleted == %d , size() == %d\n", this->Data->ProcessesCompleted,this->Data->Processes.size());
   return this->Data->ProcessesCompleted >= this->Data->Processes.size();
 }
 

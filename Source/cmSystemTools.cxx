@@ -2410,7 +2410,11 @@ static void EnsureStdPipe(int fd)
     return;
   }
 
+#ifdef __amigaos4__
+  int f = open("NIL:", fd == STDIN_FILENO ? O_RDONLY : O_WRONLY);
+#else
   int f = open("/dev/null", fd == STDIN_FILENO ? O_RDONLY : O_WRONLY);
+#endif
   if (f == -1) {
     perror("failed to open /dev/null for missing stdio pipe");
     abort();

@@ -117,8 +117,7 @@ void uv__async_close(uv_async_t* handle) {
   QUEUE_REMOVE(&handle->queue);
   uv__handle_stop(handle);
 }
-
-
+#include <proto/exec.h>
 static void uv__async_io(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
   char buf[1024];
   ssize_t r;
@@ -127,9 +126,9 @@ static void uv__async_io(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
   uv_async_t* h;
 
   assert(w == &loop->async_io_watcher);
-
   for (;;) {
     r = read(w->fd, buf, sizeof(buf));
+IExec->DebugPrintF("read() r == %d\n", r);
 
     if (r == sizeof(buf))
       continue;

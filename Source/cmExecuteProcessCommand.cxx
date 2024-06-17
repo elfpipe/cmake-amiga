@@ -41,6 +41,7 @@ void cmExecuteProcessCommandAppend(std::vector<char>& output, const char* data,
                                    std::size_t length);
 }
 
+extern "C" void IExecDebugPrintF(char *a);
 // cmExecuteProcessCommand
 bool cmExecuteProcessCommand(std::vector<std::string> const& args,
                              cmExecutionStatus& status)
@@ -349,12 +350,16 @@ bool cmExecuteProcessCommand(std::vector<std::string> const& args,
     errorData.Finished = true;
   }
 
+IExecDebugPrintF("[A] Entering uv_run loop...\n");
   while (chain.Valid() && !timedOut &&
          !(chain.Finished() && outputData.Finished && errorData.Finished)) {
+          // printf("Calling uv_run...\n");
     uv_run(&chain.GetLoop(), UV_RUN_ONCE);
   }
+IExecDebugPrintF("[A] Ended uv_run loop.\n");
   if (!arguments.OutputQuiet &&
       (arguments.OutputVariable.empty() || arguments.EchoOutputVariable)) {
+        // printf("processOutput(stdOut)\n");
     processOutput.DecodeText(std::string(), strdata, 1);
     if (!strdata.empty()) {
       cmSystemTools::Stdout(strdata);
@@ -362,6 +367,7 @@ bool cmExecuteProcessCommand(std::vector<std::string> const& args,
   }
   if (!arguments.ErrorQuiet &&
       (arguments.ErrorVariable.empty() || arguments.EchoErrorVariable)) {
+        // printf("processOutput(stdErr\n");
     processOutput.DecodeText(std::string(), strdata, 2);
     if (!strdata.empty()) {
       cmSystemTools::Stderr(strdata);
