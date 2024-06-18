@@ -71,7 +71,7 @@ static void uv__signal_global_init(void) {
      * we only want to do it once.
      */
 #ifdef __amigaos4__
-  {}
+  do {} while(0);
 #else
     if (pthread_atfork(NULL, NULL, &uv__signal_global_reinit))
       abort();

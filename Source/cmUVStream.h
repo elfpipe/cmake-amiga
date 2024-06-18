@@ -119,7 +119,6 @@ private:
     uv_stream_t* stream, ReadCallback onRead, FinishCallback onFinish);
 };
 
-extern "C" void IExecDebugPrintF(char *a);
 template <typename ReadCallback, typename FinishCallback>
 std::unique_ptr<cmUVStreamReadHandle> cmUVStreamRead(uv_stream_t* stream,
                                                      ReadCallback onRead,
@@ -133,23 +132,19 @@ std::unique_ptr<cmUVStreamReadHandle> cmUVStreamRead(uv_stream_t* stream,
   uv_read_start(
     stream,
     [](uv_handle_t* s, std::size_t suggestedSize, uv_buf_t* buffer) {
-      IExecDebugPrintF("[A] stream_create_cb\n");
       auto* data = static_cast<cmUVStreamReadHandle*>(s->data);
       data->Buffer.resize(suggestedSize);
       buffer->base = data->Buffer.data();
       buffer->len = suggestedSize;
     },
     [](uv_stream_t* s, ssize_t nread, const uv_buf_t* buffer) {
-IExecDebugPrintF("[A] stream read callback.\n");
       auto* data = static_cast<cmUVStreamReadHandle*>(s->data);
       if (nread > 0) {
-IExecDebugPrintF("[a] nread > 0\n");
         (void)buffer;
         assert(buffer->base == data->Buffer.data());
         data->Buffer.resize(nread);
         data->OnRead(std::move(data->Buffer));
-      } else if (nread <= 0 /*|| nread == UV_EOF*/) {
-IExecDebugPrintF("[a] nread < 0\n");
+      } else if (nread <= 0 /*|| nread == UV_EOF*/) { // NOTE NOTE NOTE : amiga. why not 0 ?
         data->OnFinish();
         uv_read_stop(s);
       }

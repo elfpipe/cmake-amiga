@@ -94,9 +94,7 @@ static void uv__chld(uv_signal_t* handle, int signum) {
 }
 #endif
 
-#include <proto/exec.h>
 void uv__wait_children(uv_loop_t* loop) {
-IExec->DebugPrintF("[B] uv__wait_children\n");
   uv_process_t* process;
   int exit_status;
   int term_signal;
@@ -836,8 +834,6 @@ error:
 #include <proto/dos.h>
 #include <unistd.h>
 #include <dos.h>
-#include "clib4.h"
-#include "clib4interface.h"
 struct EntryData {
   uint8 signal;
   struct Task *mainTask;
@@ -868,116 +864,18 @@ VOID amiga_EntryCode(int32 entry_data)
 }
 struct FinalData {
   uv_loop_t *loop;
-  struct MsgPort *port;
-};
-struct ExitMessage {
-  struct Message message;
-  pid_t pid;
-  int32 returnCode;
-  uv_loop_t *loop;
-  BOOL exit;
 };
 VOID amiga_FinalCode(int32 return_code, int32 final_data)
 {
   struct FinalData *fd = (struct FinalData *)final_data;
-  // struct ExitMessage *dm = (struct ExitMessage*)IExec->AllocVecTags(sizeof(struct ExitMessage), TAG_DONE);
-  // struct Process *me = IExec->FindTask(NULL);
-  // dm->pid = (pid_t)me->pr_ProcessID;
-  // dm->returnCode = return_code;
-  // dm->loop = fd->loop;
-  // dm->exit = FALSE;
-
-  // IExec->DebugPrintF("port : 0x%x\n", fd->port);
-
-  // IExec->DebugPrintF("Sending message to ChildWather.\n");
-  // IExec->PutMsg(fd->port, (struct Message*)dm);
-  // IExec->DebugPrintF("Message sent.\n");
   uv__wait_children(fd->loop);
 
   IExec->FreeVec(fd);
   IExec->DebugPrintF("[B] Child exiting.\n");
 }
-static struct MsgPort *watcherMsgPort = 0;
-void endChildWatcherThread() {
-  if(watcherMsgPort) {
-    struct ExitMessage *dm = (struct ExitMessage*)IExec->AllocVecTags(sizeof(struct ExitMessage), TAG_DONE);
-    dm->exit = TRUE;
-    IExec->PutMsg(watcherMsgPort, dm);
-  }
-}
-void __attribute__((destructor)) endChildWatcherThread(); 
-struct SigChildHandlerData {
-  struct MsgPort *port;
-  int8 readySignal;
-  struct Task *mainProcess;
-};
-int32 amiga_SigChildHandler(STRPTR args, int32 length, APTR execbase)
-{
-  struct ExecIFace *sigIExec = (struct ExecIFace *)(((struct ExecBase *)execbase)->MainInterface);
-  struct Clib4Base *sigClib4Base = (struct Clib4Base *)sigIExec->OpenLibrary("clib4.library", 0);
-  struct Clib4IFace *sigIClib4 = (struct Clib4IFace *)sigIExec->GetInterface(sigClib4Base, "main", 1, 0);
-  struct Process *me = (struct Process *)sigIExec->FindTask(0);
-
-  struct SigChildHandlerData *schd = (struct SigChildHandlerData *)me->pr_Task.tc_UserData;
-  schd->port = sigIExec->AllocSysObjectTags(ASOT_PORT, 0);
-
-  sigIExec->DebugPrintF("port : 0x%x\n", schd->port);
-  sigIExec->Signal(schd->mainProcess, 1 << schd->readySignal);
-
-  BOOL done = FALSE;
-  while(!done) {
-    IExec->DebugPrintF("Waiting for messages...\n");
-    sigIExec->WaitPort(schd->port);
-    IExec->DebugPrintF("Message received in ChildHandler.\n");
-    struct ExitMessage *em = sigIExec->GetMsg(schd->port);
-    while(em) {
-      if(!done && em->exit) { done = TRUE; }
-      // else uv__clib4_wait_children(em->loop, sigIClib4);
-      IExec->FreeVec(em);
-      em = sigIExec->GetMsg(schd->port);
-    }
-  }
-  sigIExec->DebugPrintF("Watcher thread received exit message. Closing down.\n");
-  sigIExec->FreeSysObject(ASOT_PORT, schd->port);
-  sigIExec->FreeVec(schd);
-  sigIExec->DropInterface(sigIClib4);
-  sigIExec->CloseLibrary(sigClib4Base);
-
-  return 0;
-}
-// static void uv__chld(uv_signal_t* handle, int signum) {
-//   assert(signum == SIGCHLD);
-//   uv__wait_children(handle->loop);
+// void IExecDebugPrintF(char *a){
+//   IExec->DebugPrintF(a);
 // }
-void IExecDebugPrintF(char *a){
-  IExec->DebugPrintF(a);
-}
-static struct MsgPort * amiga_StartChildWatcher()
-{
-  static struct Process *p = 0;
-  static struct MsgPort *port = 0;
-  if(!p) {
-    struct SigChildHandlerData *schd = (struct SigChildHandlerData *)IExec->AllocVecTags(sizeof(struct SigChildHandlerData), TAG_DONE);
-    // schd->port = IExec->AllocSysObjectTags(ASOT_PORT, TAG_DONE);
-    schd->mainProcess = IExec->FindTask(0);
-    schd->readySignal = IExec->AllocSignal(-1);
-    printf("Starting ChildWatcher.\n");
-    IExec->DebugPrintF("Starting ChildWatcher.\n");
-    p = IDOS->CreateNewProcTags(
-      NP_Child, TRUE,
-      NP_Entry, amiga_SigChildHandler,
-      NP_UserData, schd,
-      NP_Name, "ChildWatcher",
-
-      TAG_DONE
-    );
-    IExec->Wait(1 << schd->readySignal);
-    printf("ReadySignal received from ChildWatcher.\n%x\nport : 0x%x\n", p, port);
-    IExec->FreeSignal(schd->readySignal);
-    port = schd->port;
-  }
-  return port;
-}
 static int uv__do_create_new_process_amiga(uv_loop_t* loop,
                                           const uv_process_options_t* options,
                                           const uv_process_t *_process,
@@ -985,18 +883,18 @@ static int uv__do_create_new_process_amiga(uv_loop_t* loop,
                                           int (*pipes)[2],
                                           pid_t* pid)
 {
-  printf("uv__do_create_new_process_amiga :\n");
+  // printf("uv__do_create_new_process_amiga :\n");
 
   struct name_translation_info nti;
   const char *name = options->file;
-  printf("name : %s\n", name);
+  // printf("name : %s\n", name);
 
   int error;
   if(error = __translate_unix_to_amiga_path_name(&name, &nti)) {
     printf("%s\n", strerror(error));
     return -1;
   }
-  printf("name after conversion : %s\n", name);
+  // printf("name after conversion : %s\n", name);
 
 	BPTR seglist = IDOS->LoadSeg(name);
 	if (!seglist)
@@ -1007,7 +905,7 @@ static int uv__do_create_new_process_amiga(uv_loop_t* loop,
   int totalLen = 0;
   while(args[argc])
     totalLen += strlen(args[argc++])+1;
-  printf("strlen(args) : %d\n", totalLen);
+  // printf("strlen(args) : %d\n", totalLen);
 
 	char *mergeArgs = malloc(totalLen);
 	memset(mergeArgs, 0, totalLen);
@@ -1020,14 +918,10 @@ static int uv__do_create_new_process_amiga(uv_loop_t* loop,
     if (i < argc-1) *(mergePtr++) = ' ';
 	}
   *mergePtr = '\0';
-  printf("mergeArgs : %s\n", mergeArgs);
+  // printf("mergeArgs : %s\n", mergeArgs);
 
 	// IExec->DebugPrintF("file to execute: %s\n", name);
 	// IExec->DebugPrintF("args:            \"%s\"\n", mergeArgs);
-
-	// dprintf(error_fd, "file to execute: %s\n", name);
-	// dprintf(error_fd, "args: \"%s\"\n", mergeArgs);
-
 
   BPTR iofh[3] = { NULL, NULL, NULL };
   int closefh[3] = { FALSE, FALSE, FALSE };
@@ -1046,10 +940,6 @@ static int uv__do_create_new_process_amiga(uv_loop_t* loop,
 
 	struct Task *me = IExec->FindTask(NULL);
 
-// NP_EntryCode (VOID (*)(int32)) --  (V51.72)
-// VOID EntryCode(int32 entry_data);
-// NP_EntryData (int32) -
-
   struct EntryData *ed = (struct EntryData*)malloc(sizeof(struct EntryData));
 
   ed->process = (uv_process_t*)_process;
@@ -1059,13 +949,7 @@ static int uv__do_create_new_process_amiga(uv_loop_t* loop,
   ed->mainTask = me;
 
   struct FinalData *fd = (struct FinalData*)IExec->AllocVecTags(sizeof(struct FinalData), 0);
-  // fd->options = options;
-  // fd->port = ??
   fd->loop = loop;
-  // struct MsgPort *port = amiga_StartChildWatcher();
-  // fd->port = port;
-  // watcherMsgPort = port;
-  // IExec->DebugPrintF("port : 0x%x\n", port);
 
   struct Process *p = IDOS->CreateNewProcTags(
     NP_Seglist,		seglist,
@@ -1073,7 +957,6 @@ static int uv__do_create_new_process_amiga(uv_loop_t* loop,
 
     NP_Cli,			TRUE,
     NP_Child,		TRUE,
-    // NP_NotifyOnDeathSigTask, watcher,
 
 #if 1
     NP_Input,		iofh[0],
