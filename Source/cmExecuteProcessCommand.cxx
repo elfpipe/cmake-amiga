@@ -351,12 +351,10 @@ bool cmExecuteProcessCommand(std::vector<std::string> const& args,
 
   while (chain.Valid() && !timedOut &&
          !(chain.Finished() && outputData.Finished && errorData.Finished)) {
-          // printf("Calling uv_run...\n");
     uv_run(&chain.GetLoop(), UV_RUN_ONCE);
   }
   if (!arguments.OutputQuiet &&
       (arguments.OutputVariable.empty() || arguments.EchoOutputVariable)) {
-        // printf("processOutput(stdOut)\n");
     processOutput.DecodeText(std::string(), strdata, 1);
     if (!strdata.empty()) {
       cmSystemTools::Stdout(strdata);
@@ -364,7 +362,6 @@ bool cmExecuteProcessCommand(std::vector<std::string> const& args,
   }
   if (!arguments.ErrorQuiet &&
       (arguments.ErrorVariable.empty() || arguments.EchoErrorVariable)) {
-        // printf("processOutput(stdErr\n");
     processOutput.DecodeText(std::string(), strdata, 2);
     if (!strdata.empty()) {
       cmSystemTools::Stderr(strdata);

@@ -471,7 +471,6 @@ const cmUVProcessChain::Status& cmUVProcessChain::GetStatus(
 
 bool cmUVProcessChain::Finished() const
 {
-  IExec->DebugPrintF("Finished() : ProcessesCompleted == %d , size() == %d\n", this->Data->ProcessesCompleted,this->Data->Processes.size());
   return this->Data->ProcessesCompleted >= this->Data->Processes.size();
 }
 

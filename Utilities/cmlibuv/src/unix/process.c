@@ -858,7 +858,7 @@ VOID amiga_EntryCode(int32 entry_data)
   QUEUE_INSERT_TAIL(&ed->loop->process_handles, &ed->process->queue);
   uv__handle_start(ed->process);
 
-  IExec->DebugPrintF("[B] EntryCode : New process added to process queue.\n\n");
+  // IExec->DebugPrintF("[B] EntryCode : New process added to process queue.\n\n");
 
   if(ed) IExec->Signal(ed->mainTask, 1 << ed->signal);
 }
@@ -871,7 +871,7 @@ VOID amiga_FinalCode(int32 return_code, int32 final_data)
   uv__wait_children(fd->loop);
 
   IExec->FreeVec(fd);
-  IExec->DebugPrintF("[B] Child exiting.\n");
+  // IExec->DebugPrintF("[B] Child exiting.\n");
 }
 // void IExecDebugPrintF(char *a){
 //   IExec->DebugPrintF(a);
@@ -887,7 +887,7 @@ static int uv__do_create_new_process_amiga(uv_loop_t* loop,
 
   struct name_translation_info nti;
   const char *name = options->file;
-  // printf("name : %s\n", name);
+  printf("name : %s\n", name);
 
   int error;
   if(error = __translate_unix_to_amiga_path_name(&name, &nti)) {
@@ -907,7 +907,7 @@ static int uv__do_create_new_process_amiga(uv_loop_t* loop,
     totalLen += strlen(args[argc++])+1;
   // printf("strlen(args) : %d\n", totalLen);
 
-	char *mergeArgs = malloc(totalLen);
+	char *mergeArgs = malloc(totalLen+1);
 	memset(mergeArgs, 0, totalLen);
 
   char *mergePtr = mergeArgs;
@@ -918,7 +918,7 @@ static int uv__do_create_new_process_amiga(uv_loop_t* loop,
     if (i < argc-1) *(mergePtr++) = ' ';
 	}
   *mergePtr = '\0';
-  // printf("mergeArgs : %s\n", mergeArgs);
+  printf("mergeArgs : %s\n", mergeArgs);
 
 	// IExec->DebugPrintF("file to execute: %s\n", name);
 	// IExec->DebugPrintF("args:            \"%s\"\n", mergeArgs);
@@ -983,7 +983,7 @@ static int uv__do_create_new_process_amiga(uv_loop_t* loop,
     TAG_DONE
   );
 
-  IExec->DebugPrintF("[A] Process successfully started : p == 0x%x\n", p);
+  // IExec->DebugPrintF("[A] Process successfully started : p == 0x%x\n", p);
 
 	if (p == 0) {
     free(ed);
@@ -994,14 +994,14 @@ static int uv__do_create_new_process_amiga(uv_loop_t* loop,
 	}
 
   *pid = p->pr_ProcessID; //IDOS->IoErr();
-  IExec->DebugPrintF("[A] pid : %d\n", *pid);
+  // IExec->DebugPrintF("[A] pid : %d\n", *pid);
 
   // wait for the entry signal from the child :
   IExec->Wait(1 << ed->signal | SIGBREAKF_CTRL_C);
   IExec->FreeSignal(ed->signal);
   free(ed);
 
-  IExec->DebugPrintF("[A] Signal received from child. Continuing...\n");
+  // IExec->DebugPrintF("[A] Signal received from child. Continuing...\n");
   // success
   return 0;
 }
