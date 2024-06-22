@@ -349,10 +349,13 @@ bool cmExecuteProcessCommand(std::vector<std::string> const& args,
     errorData.Finished = true;
   }
 
+printf("[cmExecuteProcessCommand :] Entring while() loop...\n");
   while (chain.Valid() && !timedOut &&
          !(chain.Finished() && outputData.Finished && errorData.Finished)) {
+          printf("[cmExecuteProcessCommand :] chain.Finished()  == %d.\n", chain.Finished());
     uv_run(&chain.GetLoop(), UV_RUN_ONCE);
   }
+printf("[cmExecuteProcessCommand :] Exiting while() loop...\n");
   if (!arguments.OutputQuiet &&
       (arguments.OutputVariable.empty() || arguments.EchoOutputVariable)) {
     processOutput.DecodeText(std::string(), strdata, 1);

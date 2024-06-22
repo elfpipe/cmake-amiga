@@ -327,6 +327,9 @@ unsigned long Directory::GetNumberOfFilesInDirectory(const std::string& name,
     return 0;
   }
 
+// #ifdef __amigaos4__
+  errno = 0;
+// endif
   unsigned long count = 0;
   for (kwsys_dirent* d = readdir(dir); d; d = readdir(dir)) {
     count++;

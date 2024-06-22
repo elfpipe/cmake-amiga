@@ -851,14 +851,13 @@ VOID amiga_EntryCode(int32 entry_data)
 // NotE NoTE NOTE : This is placed here instead of in the main function (uv_spawn)
 // to make sure, that the child is actually registered in the the list of process
 // handles *before* the call to wait_children in the FinalCode.
-  // uv_process_t *process = (uv_process_t*)_process;
 
   // ed->process->pid = *pid;
   ed->process->exit_cb = ed->options->exit_cb;
   QUEUE_INSERT_TAIL(&ed->loop->process_handles, &ed->process->queue);
   uv__handle_start(ed->process);
 
-  // IExec->DebugPrintF("[B] EntryCode : New process added to process queue.\n\n");
+  IExec->DebugPrintF("[B] EntryCode : New process added to process queue.\n\n");
 
   if(ed) IExec->Signal(ed->mainTask, 1 << ed->signal);
 }
@@ -871,7 +870,7 @@ VOID amiga_FinalCode(int32 return_code, int32 final_data)
   uv__wait_children(fd->loop);
 
   IExec->FreeVec(fd);
-  // IExec->DebugPrintF("[B] Child exiting.\n");
+  IExec->DebugPrintF("[B] Child exiting.\n");
 }
 // void IExecDebugPrintF(char *a){
 //   IExec->DebugPrintF(a);
@@ -894,7 +893,7 @@ static int uv__do_create_new_process_amiga(uv_loop_t* loop,
     printf("%s\n", strerror(error));
     return -1;
   }
-  // printf("name after conversion : %s\n", name);
+  printf("name after conversion : %s\n", name);
 
   struct name_translation_info nti_cwd;
   const char *cwd = options->cwd;
@@ -973,6 +972,7 @@ static int uv__do_create_new_process_amiga(uv_loop_t* loop,
 
     NP_Cli,			TRUE,
     NP_Child,		TRUE,
+    NP_NotifyOnDeathSigTask, me,
 
 #if 1
     NP_Input,		iofh[0],
@@ -995,7 +995,7 @@ static int uv__do_create_new_process_amiga(uv_loop_t* loop,
     NP_FinalCode,	amiga_FinalCode,
     NP_FinalData,	fd,
 
-    NP_Name,      name,
+    NP_Name,      strdup(name),
     cwdLock ? NP_CurrentDir : TAG_SKIP, cwdLock,
     progdirLock ? NP_ProgramDir : TAG_SKIP, progdirLock,
     NP_Arguments,	mergeArgs,
@@ -1297,9 +1297,11 @@ int uv_spawn(uv_loop_t* loop,
 #ifdef __amigaos4__
     process->flags |= UV_HANDLE_REAP;
     loop->flags |= UV_LOOP_REAP_CHILDREN;
+    loop->flags |= UV_METRICS_IDLE_TIME;
 #endif
 
 // NOTE NOTE NOTE : Why is this placed here??
+// There is a chance wait_children will have ended the child *before* getting to this place...!
 #ifndef __amigaos4__
     process->pid = pid;
     process->exit_cb = options->exit_cb;

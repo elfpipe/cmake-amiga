@@ -444,8 +444,11 @@ bool cmUVProcessChain::Wait(uint64_t milliseconds)
       milliseconds, 0);
   }
 
+printf("[cmUVProcessChain :] Entering uv_run() loop...\n");
   while (!timeout &&
          this->Data->ProcessesCompleted < this->Data->Processes.size()) {
+          printf("[cmUVProcessChain :] ProcessesCompleted == %d\n", this->Data->ProcessesCompleted);
+          printf("[cmUVProcessChain :] size() == %d", this->Data->Processes.size());
     uv_run(this->Data->Loop, UV_RUN_ONCE);
   }
 
