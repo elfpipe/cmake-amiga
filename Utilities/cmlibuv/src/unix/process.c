@@ -885,16 +885,32 @@ static int uv__do_create_new_process_amiga(uv_loop_t* loop,
 {
   // printf("uv__do_create_new_process_amiga :\n");
 
-  struct name_translation_info nti;
+  struct name_translation_info nti_name;
   const char *name = options->file;
   printf("name : %s\n", name);
 
   int error;
-  if(error = __translate_unix_to_amiga_path_name(&name, &nti)) {
+  if(error = __translate_unix_to_amiga_path_name(&name, &nti_name)) {
     printf("%s\n", strerror(error));
     return -1;
   }
   // printf("name after conversion : %s\n", name);
+
+  struct name_translation_info nti_cwd;
+  const char *cwd = options->cwd;
+  printf("cwd : %s\n", cwd);
+
+  if(cwd && (error = __translate_unix_to_amiga_path_name(&cwd, &nti_cwd))) {
+    printf("%s\n", strerror(error));
+    return -1;
+  }
+  printf("cwd after conversion : %s\n", cwd);
+  BPTR cwdLock = cwd ? IDOS->Lock(cwd, SHARED_LOCK) : 0;
+  printf("lock : 0x%x\n", cwdLock);
+
+  BPTR progdirLock = 0;
+  BPTR fileLock = IDOS->Lock(name, SHARED_LOCK);
+  if(fileLock) { progdirLock = IDOS->ParentDir(fileLock); IDOS->UnLock(fileLock); }
 
 	BPTR seglist = IDOS->LoadSeg(name);
 	if (!seglist)
@@ -979,6 +995,9 @@ static int uv__do_create_new_process_amiga(uv_loop_t* loop,
     NP_FinalCode,	amiga_FinalCode,
     NP_FinalData,	fd,
 
+    NP_Name,      name,
+    cwdLock ? NP_CurrentDir : TAG_SKIP, cwdLock,
+    progdirLock ? NP_ProgramDir : TAG_SKIP, progdirLock,
     NP_Arguments,	mergeArgs,
     TAG_DONE
   );

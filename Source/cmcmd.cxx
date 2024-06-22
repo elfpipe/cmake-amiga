@@ -1815,6 +1815,7 @@ static void cmcmdProgressReport(std::string const& dir, std::string const& num)
   }
   int fileNum =
     static_cast<int>(cmsys::Directory::GetNumberOfFilesInDirectory(dirName));
+    printf("fileNum : %d count : %d\n", fileNum, count);
   if (count > 0) {
     // print the progress
     fprintf(stdout, "[%3i%%] ", ((fileNum - 3) * 100) / count);
