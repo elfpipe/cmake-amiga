@@ -136,7 +136,6 @@ static void uv__pollfds_del(uv_loop_t* loop, int fd) {
 }
 
 void uv__io_poll(uv_loop_t* loop, int timeout) {
-  printf("[uv__io_poll :] timeout : %d\n", timeout);
   sigset_t* pset;
   sigset_t set;
   uint64_t time_base;
@@ -157,6 +156,7 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
     return;
   }
 
+printf("[uv__io_poll :] Generating io queue...\n");
   /* Take queued watchers and add their fds to our poll fds array.  */
   while (!QUEUE_EMPTY(&loop->watcher_queue)) {
     q = QUEUE_HEAD(&loop->watcher_queue);
@@ -168,6 +168,7 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
     assert(w->fd >= 0);
     assert(w->fd < (int) loop->nwatchers);
 
+printf("[uv__io_poll :] *** Adding pollfd %d\n", w->fd);
     uv__pollfds_add(loop, w);
 
     w->events = w->pevents;
@@ -203,11 +204,16 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
     if (timeout != 0)
       uv__metrics_set_provider_entry_time(loop);
 
-printf("Entering poll...\n");
     if (pset != NULL)
       if (pthread_sigmask(SIG_BLOCK, pset, NULL))
         abort();
-printf("[uv__io_poll :] calling poll w/timeout : %d\n", timeout);
+printf("[uv__io_poll :] Before poll :\n");
+for (i = 0; i < loop->poll_fds_used; i++) {
+  struct pollfd *dpe = loop->poll_fds + i;
+  int dfd = dpe->fd;
+  printf("[uv__io_poll :] *** fd %d has 0x%x for events.\n", dfd, dpe->events);
+}
+
 #ifdef __amigaos4__
     uint32 signals = SIGF_CHILD;
     nfds = waitpoll(loop->poll_fds, (nfds_t)loop->poll_fds_used, timeout, &signals);
@@ -217,16 +223,24 @@ printf("[uv__io_poll :] calling poll w/timeout : %d\n", timeout);
     if (pset != NULL)
       if (pthread_sigmask(SIG_UNBLOCK, pset, NULL))
         abort();
-printf("Exiting poll...\n");
     /* Update loop->time unconditionally. It's tempting to skip the update when
      * timeout == 0 (i.e. non-blocking poll) but there is no guarantee that the
      * operating system didn't reschedule our process while in the syscall.
      */
     SAVE_ERRNO(uv__update_time(loop));
 
+printf("[uv__io_poll :] After poll :\n");
+printf("[uv__io_poll :] nfds == %d\n", nfds);
+if(nfds) {
+  for (i = 0; i < loop->poll_fds_used; i++) {
+    struct pollfd *dpe = loop->poll_fds + i;
+    int dfd = dpe->fd;
+    printf("[uv__io_poll :] fd %d has 0x%x for revents.\n", dfd, dpe->revents);
+  }
+}
 #ifdef __amigaos4__
-    if(signals & SIGF_CHILD) {
-      uv__wait_children(loop); return; }
+    if(signals & SIGF_CHILD) { printf("[uv__io_poll :] SIGF_CHILD received.\n");
+      uv__wait_children(loop); printf("[uv__io_poll :] Done with uv__wait_children() - timeout == %d\n", timeout); if(timeout == -1 && nfds <= 0) return; }
 #endif
 
     if (nfds == 0) {
@@ -286,6 +300,7 @@ printf("Exiting poll...\n");
       w = loop->watchers[fd];
 
       if (w == NULL) {
+        printf("[uv__io_poll :] Skipping fd %d\n", fd);
         /* File descriptor that we've stopped watching, ignore.  */
         uv__platform_invalidate_fd(loop, fd);
         continue;

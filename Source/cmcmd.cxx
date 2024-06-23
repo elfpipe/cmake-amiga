@@ -1911,8 +1911,6 @@ int cmcmd::ExecuteLinkScript(std::vector<std::string> const& args)
       continue;
     }
 
-std::cout << "[ExecuteLinkerScript :] command == \"" << command << "\"\n";
-
     // Allocate a process instance.
     cmUVProcessChainBuilder builder;
 
@@ -1934,14 +1932,9 @@ std::cout << "[ExecuteLinkerScript :] command == \"" << command << "\"\n";
       std::cout << command << std::endl;
     }
 
-for(std::vector<std::string>::iterator it = args2.begin(); it != args2.end(); it++)
-  std::cout << "[ExecuteLinkerScript :] \"" << (*it) << "\"\n";
-
     // Run the command and wait for it to exit.
     auto chain = builder.Start();
     chain.Wait();
-
-std::cout << "[ExecuteLinkerScript :] Return from Wait().\n";
 
     // Report failure if any.
     auto const& status = chain.GetStatus(0);

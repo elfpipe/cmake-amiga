@@ -852,26 +852,26 @@ VOID amiga_EntryCode(int32 entry_data)
 // to make sure, that the child is actually registered in the the list of process
 // handles *before* the call to wait_children in the FinalCode.
 
-  // ed->process->pid = *pid;
-  ed->process->exit_cb = ed->options->exit_cb;
-  QUEUE_INSERT_TAIL(&ed->loop->process_handles, &ed->process->queue);
-  uv__handle_start(ed->process);
+  // // ed->process->pid = *pid;
+  // ed->process->exit_cb = ed->options->exit_cb;
+  // QUEUE_INSERT_TAIL(&ed->loop->process_handles, &ed->process->queue);
+  // uv__handle_start(ed->process);
 
-  IExec->DebugPrintF("[B] EntryCode : New process added to process queue.\n\n");
+  // IExec->DebugPrintF("[B] EntryCode : New process added to process queue.\n\n");
 
   if(ed) IExec->Signal(ed->mainTask, 1 << ed->signal);
 }
-struct FinalData {
-  uv_loop_t *loop;
-};
-VOID amiga_FinalCode(int32 return_code, int32 final_data)
-{
-  struct FinalData *fd = (struct FinalData *)final_data;
-  uv__wait_children(fd->loop);
+// struct FinalData {
+//   uv_loop_t *loop;
+// };
+// VOID amiga_FinalCode(int32 return_code, int32 final_data)
+// {
+//   struct FinalData *fd = (struct FinalData *)final_data;
+//   uv__wait_children(fd->loop);
 
-  IExec->FreeVec(fd);
-  IExec->DebugPrintF("[B] Child exiting.\n");
-}
+//   IExec->FreeVec(fd);
+//   IExec->DebugPrintF("[B] Child exiting.\n");
+// }
 // void IExecDebugPrintF(char *a){
 //   IExec->DebugPrintF(a);
 // }
@@ -963,8 +963,8 @@ static int uv__do_create_new_process_amiga(uv_loop_t* loop,
   ed->signal = IExec->AllocSignal(-1);
   ed->mainTask = me;
 
-  struct FinalData *fd = (struct FinalData*)IExec->AllocVecTags(sizeof(struct FinalData), 0);
-  fd->loop = loop;
+  // struct FinalData *fd = (struct FinalData*)IExec->AllocVecTags(sizeof(struct FinalData), 0);
+  // fd->loop = loop;
 
   struct Process *p = IDOS->CreateNewProcTags(
     NP_Seglist,		seglist,
@@ -992,8 +992,8 @@ static int uv__do_create_new_process_amiga(uv_loop_t* loop,
 
     NP_EntryCode, amiga_EntryCode,
     NP_EntryData, ed,
-    NP_FinalCode,	amiga_FinalCode,
-    NP_FinalData,	fd,
+    // NP_FinalCode,	amiga_FinalCode,
+    // NP_FinalData,	fd,
 
     NP_Name,      strdup(name),
     cwdLock ? NP_CurrentDir : TAG_SKIP, cwdLock,
@@ -1006,7 +1006,7 @@ static int uv__do_create_new_process_amiga(uv_loop_t* loop,
 
 	if (p == 0) {
     free(ed);
-    IExec->FreeVec(fd);
+    // IExec->FreeVec(fd);
     for(int i = 0; i < 3; i++)
       if(closefh[i]) IDOS->Close(iofh[i]);
 		return -1;
@@ -1302,12 +1302,13 @@ int uv_spawn(uv_loop_t* loop,
 
 // NOTE NOTE NOTE : Why is this placed here??
 // There is a chance wait_children will have ended the child *before* getting to this place...!
-#ifndef __amigaos4__
+// #ifndef __amigaos4__
+printf("Adding %d to process queue.\n", pid);
     process->pid = pid;
     process->exit_cb = options->exit_cb;
     QUEUE_INSERT_TAIL(&loop->process_handles, &process->queue);
     uv__handle_start(process);
-#endif
+// #endif
   }
 
   for (i = 0; i < options->stdio_count; i++) {

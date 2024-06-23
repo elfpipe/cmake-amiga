@@ -320,7 +320,7 @@ bool cmExecuteProcessCommand(std::vector<std::string> const& args,
           }
         }
       },
-      [&outputData]() { outputData.Finished = true; });
+      [&outputData]() { outputData.Finished = true; printf("outputData.Finished == true;\n"); } );
   } else {
     outputData.Finished = true;
   }
@@ -344,18 +344,17 @@ bool cmExecuteProcessCommand(std::vector<std::string> const& args,
           }
         }
       },
-      [&errorData]() { errorData.Finished = true; });
+      [&errorData]() { errorData.Finished = true; printf("errorData.Finished = true;\n"); } );
   } else {
     errorData.Finished = true;
   }
 
-printf("[cmExecuteProcessCommand :] Entring while() loop...\n");
   while (chain.Valid() && !timedOut &&
          !(chain.Finished() && outputData.Finished && errorData.Finished)) {
-          printf("[cmExecuteProcessCommand :] chain.Finished()  == %d.\n", chain.Finished());
+          printf("Calling uv_run()... chain.Finished() == %s\n", chain.Finished() ? "true" : "false");
     uv_run(&chain.GetLoop(), UV_RUN_ONCE);
+    printf("Back from uv_run()...\n");
   }
-printf("[cmExecuteProcessCommand :] Exiting while() loop...\n");
   if (!arguments.OutputQuiet &&
       (arguments.OutputVariable.empty() || arguments.EchoOutputVariable)) {
     processOutput.DecodeText(std::string(), strdata, 1);
