@@ -175,7 +175,6 @@ cmUVProcessChain cmUVProcessChainBuilder::Start() const
   }
 
   chain.Data->Finish();
-
   return chain;
 }
 
@@ -317,7 +316,6 @@ bool cmUVProcessChain::InternalData::Prepare(
   return true;
 }
 
-#include <proto/exec.h>
 void cmUVProcessChain::InternalData::SpawnProcess(
   std::size_t index,
   const cmUVProcessChainBuilder::ProcessConfiguration& config, bool first,
@@ -372,9 +370,7 @@ void cmUVProcessChain::InternalData::SpawnProcess(
     processData->ProcessStatus.ExitStatus = exitStatus;
     processData->ProcessStatus.TermSignal = termSignal;
     processData->Finish();
-                        printf("[A] **************************** exit_cb\n");
   };
-
   if ((process.ProcessStatus.SpawnResult =
          process.Process.spawn(*this->Loop, options, &process)) < 0) {
     process.Finish();

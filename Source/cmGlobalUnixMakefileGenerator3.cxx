@@ -540,6 +540,10 @@ cmGlobalUnixMakefileGenerator3::GenerateBuildCommand(
     makeCommand.Add("env");
     makeCommand.Add("VERBOSE=1");
   }
+#ifdef __amigaos4__
+// There is a problem with the MAKE env variable on AmigaOS during recursion
+  makeCommand.Add("MAKE=gmake");
+#endif
   makeCommand.Add(this->SelectMakeProgram(makeProgram));
 
   // Explicitly tell the make tool to use the Makefile written by

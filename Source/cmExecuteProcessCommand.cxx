@@ -273,7 +273,6 @@ bool cmExecuteProcessCommand(std::vector<std::string> const& args,
   }
   // Start the process.
   auto chain = builder.Start();
-
   bool timedOut = false;
   cm::uv_timer_ptr timer;
 
@@ -286,7 +285,6 @@ bool cmExecuteProcessCommand(std::vector<std::string> const& args,
       },
       timeoutMillis, 0);
   }
-
   // Read the process output.
   struct ReadData
   {
@@ -320,7 +318,7 @@ bool cmExecuteProcessCommand(std::vector<std::string> const& args,
           }
         }
       },
-      [&outputData]() { outputData.Finished = true; printf("outputData.Finished == true;\n"); } );
+      [&outputData]() { outputData.Finished = true; });
   } else {
     outputData.Finished = true;
   }
@@ -344,16 +342,14 @@ bool cmExecuteProcessCommand(std::vector<std::string> const& args,
           }
         }
       },
-      [&errorData]() { errorData.Finished = true; printf("errorData.Finished = true;\n"); } );
+      [&errorData]() { errorData.Finished = true; });
   } else {
     errorData.Finished = true;
   }
 
   while (chain.Valid() && !timedOut &&
          !(chain.Finished() && outputData.Finished && errorData.Finished)) {
-          printf("Calling uv_run()... chain.Finished() == %s\n", chain.Finished() ? "true" : "false");
     uv_run(&chain.GetLoop(), UV_RUN_ONCE);
-    printf("Back from uv_run()...\n");
   }
   if (!arguments.OutputQuiet &&
       (arguments.OutputVariable.empty() || arguments.EchoOutputVariable)) {

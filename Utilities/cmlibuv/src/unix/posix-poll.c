@@ -28,6 +28,7 @@
  */
 
 #ifdef __amigaos4__
+#include <proto/exec.h>
 #include <proto/dos.h>
 extern void uv__wait_children(uv_loop_t* loop);
 #endif
@@ -156,7 +157,6 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
     return;
   }
 
-printf("[uv__io_poll :] Generating io queue...\n");
   /* Take queued watchers and add their fds to our poll fds array.  */
   while (!QUEUE_EMPTY(&loop->watcher_queue)) {
     q = QUEUE_HEAD(&loop->watcher_queue);
@@ -168,7 +168,6 @@ printf("[uv__io_poll :] Generating io queue...\n");
     assert(w->fd >= 0);
     assert(w->fd < (int) loop->nwatchers);
 
-printf("[uv__io_poll :] *** Adding pollfd %d\n", w->fd);
     uv__pollfds_add(loop, w);
 
     w->events = w->pevents;
@@ -207,12 +206,6 @@ printf("[uv__io_poll :] *** Adding pollfd %d\n", w->fd);
     if (pset != NULL)
       if (pthread_sigmask(SIG_BLOCK, pset, NULL))
         abort();
-printf("[uv__io_poll :] Before poll :\n");
-for (i = 0; i < loop->poll_fds_used; i++) {
-  struct pollfd *dpe = loop->poll_fds + i;
-  int dfd = dpe->fd;
-  printf("[uv__io_poll :] *** fd %d has 0x%x for events.\n", dfd, dpe->events);
-}
 
 #ifdef __amigaos4__
     uint32 signals = SIGF_CHILD;
@@ -229,18 +222,11 @@ for (i = 0; i < loop->poll_fds_used; i++) {
      */
     SAVE_ERRNO(uv__update_time(loop));
 
-printf("[uv__io_poll :] After poll :\n");
-printf("[uv__io_poll :] nfds == %d\n", nfds);
-if(nfds) {
-  for (i = 0; i < loop->poll_fds_used; i++) {
-    struct pollfd *dpe = loop->poll_fds + i;
-    int dfd = dpe->fd;
-    printf("[uv__io_poll :] fd %d has 0x%x for revents.\n", dfd, dpe->revents);
-  }
-}
 #ifdef __amigaos4__
-    if(signals & SIGF_CHILD) { printf("[uv__io_poll :] SIGF_CHILD received.\n");
-      uv__wait_children(loop); printf("[uv__io_poll :] Done with uv__wait_children() - timeout == %d\n", timeout); if(timeout == -1 && nfds <= 0) return; }
+    if(signals & SIGF_CHILD) {
+      uv__wait_children(loop);
+      return;
+    }
 #endif
 
     if (nfds == 0) {
@@ -300,7 +286,6 @@ if(nfds) {
       w = loop->watchers[fd];
 
       if (w == NULL) {
-        printf("[uv__io_poll :] Skipping fd %d\n", fd);
         /* File descriptor that we've stopped watching, ignore.  */
         uv__platform_invalidate_fd(loop, fd);
         continue;
