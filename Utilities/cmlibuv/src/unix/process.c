@@ -113,8 +113,10 @@ void uv__wait_children(uv_loop_t* loop) {
   uv_process_t* process;
   int exit_status;
   int term_signal;
+#ifndef __amigaos4__
   int status;
   int options;
+#endif
   pid_t pid;
   QUEUE pending;
   QUEUE* q;
@@ -137,7 +139,6 @@ void uv__wait_children(uv_loop_t* loop) {
       IDOS->WaitForChildExit(process->pid);
 
     pid = process->pid;
-    // process->status is assigned in the FinalCode
 #else // __amigaos4__
 
 #if !defined(UV_USE_SIGCHLD)
@@ -150,7 +151,7 @@ void uv__wait_children(uv_loop_t* loop) {
 #endif
 
     do
-      pid = waitpid(process->pid, &status, 0) ;//options);
+      pid = waitpid(process->pid, &status, options);
     while (pid == -1 && errno == EINTR);
 
 
@@ -169,7 +170,10 @@ void uv__wait_children(uv_loop_t* loop) {
     }
 
     assert(pid == process->pid);
+#ifndef __amigaos4__
+    // process->status is assigned in the FinalCode
     process->status = status;
+#endif
     QUEUE_REMOVE(&process->queue);
     QUEUE_INSERT_TAIL(&pending, &process->queue);
   }
@@ -189,7 +193,7 @@ void uv__wait_children(uv_loop_t* loop) {
 
 #ifdef __amigaos4__
     exit_status = process->status;
-    term_signal = 0;
+    term_signal = 0; //todo
 #else
     exit_status = 0;
     if (WIFEXITED(process->status))
@@ -887,7 +891,7 @@ VOID amiga_FinalCode(int32 return_code, int32 final_data)
 {
   struct FinalData *fd = (struct FinalData *)final_data;
   fd->process->status = return_code;
-  IExec->DebugPrintF("[amiga_FinalCode :] Ending child w\\return_code == %d\n", return_code);
+  IExec->DebugPrintF("[amiga_FinalCode :] Ending child w\\return_code == 0x%lx\n", return_code);
   IExec->FreeVec(fd);
 }
 static int uv__do_create_new_process_amiga(uv_loop_t* loop,
@@ -900,6 +904,8 @@ static int uv__do_create_new_process_amiga(uv_loop_t* loop,
 
   struct name_translation_info nti_name;
   const char *name = options->file;
+
+IExec->DebugPrintF("[uv__do_create_new_process_amiga :] New process \'%s\'\n", name);
 
   int error;
   if(error = __translate_unix_to_amiga_path_name(&name, &nti_name)) {
