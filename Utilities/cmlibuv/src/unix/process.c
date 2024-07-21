@@ -874,15 +874,22 @@ error:
 #include <dos.h>
 struct EntryData {
   uint8 signal;
-  struct Task *mainTask;
+  struct Task *mainTask, *me;
+  pid_t pid;
 };
 VOID amiga_EntryCode(int32 entry_data)
 {
+  struct EntryData *ed = (struct EntryData *)entry_data;
+
+  ed->me = IExec->FindTask(0);
+  struct Process *p = (struct Process *)ed->me;
+  ed->pid = (pid_t)p->pr_ProcessID;
+
   // NOTES:
   // We need to make sure, that the spawned process exists, before the parent can continue.
   // See the notes for : uv__spawn_and_init_child_posix_spawn
-  struct EntryData *ed = (struct EntryData *)entry_data;
   if(ed) IExec->Signal(ed->mainTask, 1 << ed->signal);
+
 }
 struct FinalData {
   uv_process_t *process;
@@ -926,10 +933,13 @@ IExec->DebugPrintF("[uv__do_create_new_process_amiga :] New process \'%s\'\n", n
   BPTR fileLock = IDOS->Lock(name, SHARED_LOCK);
   if(fileLock) { progdirLock = IDOS->ParentDir(fileLock); IDOS->UnLock(fileLock); }
 
+#if 0
 	BPTR seglist = IDOS->LoadSeg(name);
 	if (!seglist)
 		return -1;
+#endif
 
+#if 0
   char** args = options->args;
   int argc = 1;
   int totalLen = 0;
@@ -947,9 +957,33 @@ IExec->DebugPrintF("[uv__do_create_new_process_amiga :] New process \'%s\'\n", n
     if (i < argc-1) *(mergePtr++) = ' ';
 	}
   *mergePtr = '\0';
+#else
+  char** args = options->args;
+  int argc = 1;
+  int totalLen = strlen(name)+1;
+  while(args[argc])
+    totalLen += strlen(args[argc++])+1;
 
-	// IExec->DebugPrintF("file to execute: %s\n", name);
-	// IExec->DebugPrintF("args:            \"%s\"\n", mergeArgs);
+	char *mergeArgs = malloc(totalLen+1);
+	memset(mergeArgs, 0, totalLen);
+
+  char *mergePtr = mergeArgs;
+  mergePtr[0] = '\0';
+  char *namePtr = name;
+  for(int i = 0; i < strlen(name); i++) {
+    *(mergePtr++) = *(namePtr++);
+  }
+  *(mergePtr++) = ' ';
+	for (int i = 1; i < argc; i++) {
+    char *argPtr = args[i];
+    while(*argPtr) *(mergePtr++) = *(argPtr++);
+    if (i < argc-1) *(mergePtr++) = ' ';
+	}
+  *mergePtr = '\0';
+#endif
+
+	IExec->DebugPrintF("[__uv_do_cnpa :] file to execute: %s\n", name);
+	IExec->DebugPrintF("[__uv_do_cnpa :] args:            \"%s\"\n", mergeArgs);
 
   BPTR iofh[3] = { NULL, NULL, NULL };
   int closefh[3] = { FALSE, FALSE, FALSE };
@@ -976,6 +1010,29 @@ IExec->DebugPrintF("[uv__do_create_new_process_amiga :] New process \'%s\'\n", n
   struct FinalData *fd = (struct FinalData*)IExec->AllocVecTags(sizeof(struct FinalData), 0);
   fd->process = _process;
 
+  int result = IDOS->SystemTags((STRPTR) mergeArgs,
+    NP_Cli,			TRUE,
+    NP_Child,		TRUE,
+    NP_NotifyOnDeathSigTask, me,
+
+    SYS_Input, iofh[0],
+    SYS_Output, iofh[1],
+    SYS_Error, iofh[2],
+
+    SYS_Asynch, TRUE,
+    SYS_UserShell, TRUE,
+
+    NP_EntryCode, amiga_EntryCode,
+    NP_EntryData, ed,
+    NP_FinalCode,	amiga_FinalCode,
+    NP_FinalData,	fd,
+
+    NP_Name, strdup(name),
+    cwdLock ? NP_CurrentDir : TAG_SKIP, cwdLock,
+
+    TAG_END);
+
+#if 0
   struct Process *p = IDOS->CreateNewProcTags(
     NP_Seglist,		seglist,
     NP_FreeSeglist,	TRUE,
@@ -1011,19 +1068,30 @@ IExec->DebugPrintF("[uv__do_create_new_process_amiga :] New process \'%s\'\n", n
     NP_Arguments,	mergeArgs,
     TAG_DONE
   );
+#endif
 
-	if (p == 0) {
+  IExec->DebugPrintF("[__uv_do_cnpa :] result : %d\n", result);
+
+	if (result < 0) { // p == 0 for CNPT
     free(ed);
     for(int i = 0; i < 3; i++)
       if(closefh[i]) IDOS->Close(iofh[i]);
 		return -1;
 	}
 
-  *pid = p->pr_ProcessID;
+  // *pid = p->pr_ProcessID;
 
   // wait for the entry signal from the child :
   IExec->Wait(1 << ed->signal | SIGBREAKF_CTRL_C);
   IExec->FreeSignal(ed->signal);
+
+  IExec->DebugPrintF("[__uv_do_cnpa :] received signal from spawnee.\n");
+
+  struct Process *p = (struct Process*)ed->me;
+  *pid = p->pr_ProcessID;
+
+  IExec->DebugPrintF("[__uv_do_cnpa :] pid : %d\n", *pid);
+
   free(ed);
 
   // success
