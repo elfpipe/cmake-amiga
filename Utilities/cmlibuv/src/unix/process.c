@@ -113,7 +113,7 @@ void uv__wait_children(uv_loop_t* loop) {
   uv_process_t* process;
   int exit_status;
   int term_signal;
-#ifndef __amigaos4__
+#if 1//ndef __amigaos4__
   int status;
   int options;
 #endif
@@ -130,7 +130,7 @@ void uv__wait_children(uv_loop_t* loop) {
     process = QUEUE_DATA(q, uv_process_t, queue);
     q = QUEUE_NEXT(q);
 
-#ifdef __amigaos4__
+#if 0//def __amigaos4__
     pid = 0;
     struct Hook h_ook = {{NULL, NULL}, (HOOKFUNC) hook_function, NULL, NULL};
 
@@ -170,7 +170,7 @@ void uv__wait_children(uv_loop_t* loop) {
     }
 
     assert(pid == process->pid);
-#ifndef __amigaos4__
+#if 1//ndef __amigaos4__
     // process->status is assigned in the FinalCode
     process->status = status;
 #endif
@@ -191,7 +191,7 @@ void uv__wait_children(uv_loop_t* loop) {
     if (process->exit_cb == NULL)
       continue;
 
-#ifdef __amigaos4__
+#if 0 //def __amigaos4__
     exit_status = process->status;
     term_signal = 0; //todo
 #else
@@ -894,7 +894,7 @@ VOID amiga_EntryCode(int32 entry_data)
 struct FinalData {
   uv_process_t *process;
 };
-VOID amiga_FinalCode(int32 return_code, int32 final_data)
+VOID amiga_FinalCode(int32 return_code, APTR final_data)
 {
   struct FinalData *fd = (struct FinalData *)final_data;
   fd->process->status = return_code;
@@ -908,6 +908,33 @@ static int uv__do_create_new_process_amiga(uv_loop_t* loop,
                                           int (*pipes)[2],
                                           pid_t* pid)
 {
+  struct EntryData *ed = (struct EntryData*)malloc(sizeof(struct EntryData));
+
+  ed->signal = IExec->AllocSignal(-1);
+  ed->mainTask = IExec->FindTask(0);
+
+  struct FinalData *fd = (struct FinalData*)IExec->AllocVecTags(sizeof(struct FinalData), 0);
+  fd->process = _process;
+
+IExec->DebugPrintF("[uv__process :] Calling spawnvpe.\n");
+
+  int result = spawnvpe_callback(options->file, options->args, options->env, options->cwd, pipes[0][1], pipes[1][1], pipes[2][1], amiga_FinalCode, fd, amiga_EntryCode, ed);
+
+IExec->DebugPrintF("[uv__process :] spawnvpe returned : %ld\n", result);
+
+  if(result <= 0) return UV__ERR(result);
+
+  // wait for the entry signal from the child :
+  IExec->Wait(1 << ed->signal | SIGBREAKF_CTRL_C);
+  IExec->FreeSignal(ed->signal);
+
+  IExec->DebugPrintF("[uv__process :] Received signal from spawnee.\n");
+
+  *pid = (pid_t)result;
+
+  return 0;
+
+#if ROEVBANAN
 
   struct name_translation_info nti_name;
   const char *name = options->file;
@@ -1096,6 +1123,7 @@ IExec->DebugPrintF("[uv__do_create_new_process_amiga :] New process \'%s\'\n", n
 
   // success
   return 0;
+#endif
 }
 #endif //__amigaos4__
 
