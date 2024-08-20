@@ -1082,9 +1082,9 @@ int uv_spawn(uv_loop_t* loop,
 
   /* Spawn the child */
   exec_errorno = uv__spawn_and_init_child(loop, options,
-#ifdef __amigaos4__
-                          process,
-#endif
+// #ifdef __amigaos4__
+//                           process,
+// #endif
                           stdio_count, pipes, &pid);
 
 #if 0
@@ -1099,7 +1099,10 @@ int uv_spawn(uv_loop_t* loop,
    * fail to open a stdio handle. This ensures we can eventually reap the child
    * with waitpid. */
   if (exec_errorno == 0) {
-#if !defined(UV_USE_SIGCHLD) && !defined(__amigaos4__)
+
+#if defined(__amigaos4__)
+  process->flags |= UV_HANDLE_REAP;
+#elif !defined(UV_USE_SIGCHLD)
     struct kevent event;
     EV_SET(&event, pid, EVFILT_PROC, EV_ADD | EV_ONESHOT, NOTE_EXIT, 0, 0);
     if (kevent(loop->backend_fd, &event, 1, NULL, 0, NULL)) {
