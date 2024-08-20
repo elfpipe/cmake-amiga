@@ -94,29 +94,12 @@ static void uv__chld(uv_signal_t* handle, int signum) {
 }
 #endif
 
-#ifdef __amigaos4__
-#include <proto/dos.h>
-static APTR
-hook_function(struct Hook *hook, APTR userdata, struct Process *process) {
-    uint32 pid = (uint32) userdata;
-    (void) (hook);
-
-    if (process->pr_ProcessID == pid) {
-        return process;
-    }
-
-    return 0;
-}
-#endif
-
 void uv__wait_children(uv_loop_t* loop) {
   uv_process_t* process;
   int exit_status;
   int term_signal;
-#if 1//ndef __amigaos4__
   int status;
   int options;
-#endif
   pid_t pid;
   QUEUE pending;
   QUEUE* q;
@@ -129,17 +112,6 @@ void uv__wait_children(uv_loop_t* loop) {
   while (q != h) {
     process = QUEUE_DATA(q, uv_process_t, queue);
     q = QUEUE_NEXT(q);
-
-#if 0//def __amigaos4__
-    pid = 0;
-    struct Hook h_ook = {{NULL, NULL}, (HOOKFUNC) hook_function, NULL, NULL};
-
-    int32 r = IDOS->ProcessScan(&h_ook, (CONST_APTR) process->pid, 0);
-    if (r > 0)
-      IDOS->WaitForChildExit(process->pid);
-
-    pid = process->pid;
-#else // __amigaos4__
 
 #if !defined(UV_USE_SIGCHLD)
     if ((process->flags & UV_HANDLE_REAP) == 0)
@@ -159,7 +131,6 @@ void uv__wait_children(uv_loop_t* loop) {
     if (pid == 0) /* Not yet exited */
       continue;
 #endif
-#endif //__amigaos4__
 
     if (pid == -1) {
       if (errno != ECHILD)
@@ -170,10 +141,7 @@ void uv__wait_children(uv_loop_t* loop) {
     }
 
     assert(pid == process->pid);
-#if 1//ndef __amigaos4__
-    // process->status is assigned in the FinalCode
     process->status = status;
-#endif
     QUEUE_REMOVE(&process->queue);
     QUEUE_INSERT_TAIL(&pending, &process->queue);
   }
@@ -191,10 +159,8 @@ void uv__wait_children(uv_loop_t* loop) {
     if (process->exit_cb == NULL)
       continue;
 
-#if 0 //def __amigaos4__
     exit_status = process->status;
     term_signal = 0; //todo
-#else
     exit_status = 0;
     if (WIFEXITED(process->status))
       exit_status = WEXITSTATUS(process->status);
@@ -202,7 +168,6 @@ void uv__wait_children(uv_loop_t* loop) {
     term_signal = 0;
     if (WIFSIGNALED(process->status))
       term_signal = WTERMSIG(process->status);
-#endif
 
     process->exit_cb(process, exit_status, term_signal);
   }
@@ -868,262 +833,18 @@ error:
 #endif
 
 #ifdef __amigaos4__
-#include <proto/exec.h>
-#include <proto/dos.h>
 #include <unistd.h>
-#include <dos.h>
-struct EntryData {
-  uint8 signal;
-  struct Task *mainTask, *me;
-  pid_t pid;
-};
-VOID amiga_EntryCode(int32 entry_data)
-{
-  struct EntryData *ed = (struct EntryData *)entry_data;
-
-  ed->me = IExec->FindTask(0);
-  struct Process *p = (struct Process *)ed->me;
-  ed->pid = (pid_t)p->pr_ProcessID;
-
-  // NOTES:
-  // We need to make sure, that the spawned process exists, before the parent can continue.
-  // See the notes for : uv__spawn_and_init_child_posix_spawn
-  if(ed) IExec->Signal(ed->mainTask, 1 << ed->signal);
-
-}
-struct FinalData {
-  uv_process_t *process;
-};
-VOID amiga_FinalCode(int32 return_code, APTR final_data)
-{
-  struct FinalData *fd = (struct FinalData *)final_data;
-  fd->process->status = return_code;
-  IExec->DebugPrintF("[amiga_FinalCode :] Ending child w\\return_code == 0x%lx\n", return_code);
-  IExec->FreeVec(fd);
-}
 static int uv__do_create_new_process_amiga(uv_loop_t* loop,
                                           const uv_process_options_t* options,
-                                          const uv_process_t *_process,
+                                          // const uv_process_t *_process,
                                           int stdio_count,
                                           int (*pipes)[2],
                                           pid_t* pid)
 {
-  struct EntryData *ed = (struct EntryData*)malloc(sizeof(struct EntryData));
-
-  ed->signal = IExec->AllocSignal(-1);
-  ed->mainTask = IExec->FindTask(0);
-
-  struct FinalData *fd = (struct FinalData*)IExec->AllocVecTags(sizeof(struct FinalData), 0);
-  fd->process = _process;
-
-IExec->DebugPrintF("[uv__process :] Calling spawnvpe.\n");
-
-  int result = spawnvpe_callback(options->file, options->args, options->env, options->cwd, pipes[0][1], pipes[1][1], pipes[2][1], amiga_FinalCode, fd, amiga_EntryCode, ed);
-
-IExec->DebugPrintF("[uv__process :] spawnvpe returned : %ld\n", result);
-
-  if(result <= 0) return UV__ERR(result);
-
-  // wait for the entry signal from the child :
-  IExec->Wait(1 << ed->signal | SIGBREAKF_CTRL_C);
-  IExec->FreeSignal(ed->signal);
-
-  IExec->DebugPrintF("[uv__process :] Received signal from spawnee.\n");
-
+  int result = spawnvpe(options->file, options->args, options->env, options->cwd, pipes[0][1], pipes[1][1], pipes[2][1]);
   *pid = (pid_t)result;
 
-  return 0;
-
-#if ROEVBANAN
-
-  struct name_translation_info nti_name;
-  const char *name = options->file;
-
-IExec->DebugPrintF("[uv__do_create_new_process_amiga :] New process \'%s\'\n", name);
-
-  int error;
-  if(error = __translate_unix_to_amiga_path_name(&name, &nti_name)) {
-    printf("%s\n", strerror(error));
-    return -1;
-  }
-
-  struct name_translation_info nti_cwd;
-  const char *cwd = options->cwd;
-
-  if(cwd && (error = __translate_unix_to_amiga_path_name(&cwd, &nti_cwd))) {
-    printf("%s\n", strerror(error));
-    return -1;
-  }
-  BPTR cwdLock = cwd ? IDOS->Lock(cwd, SHARED_LOCK) : 0;
-
-  BPTR progdirLock = 0;
-  BPTR fileLock = IDOS->Lock(name, SHARED_LOCK);
-  if(fileLock) { progdirLock = IDOS->ParentDir(fileLock); IDOS->UnLock(fileLock); }
-
-#if 0
-	BPTR seglist = IDOS->LoadSeg(name);
-	if (!seglist)
-		return -1;
-#endif
-
-#if 0
-  char** args = options->args;
-  int argc = 1;
-  int totalLen = 0;
-  while(args[argc])
-    totalLen += strlen(args[argc++])+1;
-
-	char *mergeArgs = malloc(totalLen+1);
-	memset(mergeArgs, 0, totalLen);
-
-  char *mergePtr = mergeArgs;
-  mergePtr[0] = '\0';
-	for (int i = 1; i < argc; i++) {
-    char *argPtr = args[i];
-    while(*argPtr) *(mergePtr++) = *(argPtr++);
-    if (i < argc-1) *(mergePtr++) = ' ';
-	}
-  *mergePtr = '\0';
-#else
-  char** args = options->args;
-  int argc = 1;
-  int totalLen = strlen(name)+1;
-  while(args[argc])
-    totalLen += strlen(args[argc++])+1;
-
-	char *mergeArgs = malloc(totalLen+1);
-	memset(mergeArgs, 0, totalLen);
-
-  char *mergePtr = mergeArgs;
-  mergePtr[0] = '\0';
-  char *namePtr = name;
-  for(int i = 0; i < strlen(name); i++) {
-    *(mergePtr++) = *(namePtr++);
-  }
-  *(mergePtr++) = ' ';
-	for (int i = 1; i < argc; i++) {
-    char *argPtr = args[i];
-    while(*argPtr) *(mergePtr++) = *(argPtr++);
-    if (i < argc-1) *(mergePtr++) = ' ';
-	}
-  *mergePtr = '\0';
-#endif
-
-	IExec->DebugPrintF("[__uv_do_cnpa :] file to execute: %s\n", name);
-	IExec->DebugPrintF("[__uv_do_cnpa :] args:            \"%s\"\n", mergeArgs);
-
-  BPTR iofh[3] = { NULL, NULL, NULL };
-  int closefh[3] = { FALSE, FALSE, FALSE };
-  for(int i = 0; i < 3; i++) {
-    if(stdio_count > i && pipes[i][1] >= 0) {
-       BPTR fh;
-       int err = __get_default_file(pipes[i][1], (long *)&fh);
-       if(err) return 0;
-       iofh[i] = IDOS->DupFileHandle(fh); //in case this is closed by the parent
-       closefh[i] = TRUE;
-    } else {
-	    iofh[i]= IDOS->Open("NIL:", MODE_OLDFILE);
-      closefh[i] = TRUE;
-    }
-  }
-
-	struct Task *me = IExec->FindTask(NULL);
-
-  struct EntryData *ed = (struct EntryData*)malloc(sizeof(struct EntryData));
-
-  ed->signal = IExec->AllocSignal(-1);
-  ed->mainTask = me;
-
-  struct FinalData *fd = (struct FinalData*)IExec->AllocVecTags(sizeof(struct FinalData), 0);
-  fd->process = _process;
-
-  int result = IDOS->SystemTags((STRPTR) mergeArgs,
-    NP_Cli,			TRUE,
-    NP_Child,		TRUE,
-    NP_NotifyOnDeathSigTask, me,
-
-    SYS_Input, iofh[0],
-    SYS_Output, iofh[1],
-    SYS_Error, iofh[2],
-
-    SYS_Asynch, TRUE,
-    SYS_UserShell, TRUE,
-
-    NP_EntryCode, amiga_EntryCode,
-    NP_EntryData, ed,
-    NP_FinalCode,	amiga_FinalCode,
-    NP_FinalData,	fd,
-
-    NP_Name, strdup(name),
-    cwdLock ? NP_CurrentDir : TAG_SKIP, cwdLock,
-
-    TAG_END);
-
-#if 0
-  struct Process *p = IDOS->CreateNewProcTags(
-    NP_Seglist,		seglist,
-    NP_FreeSeglist,	TRUE,
-
-    NP_Cli,			TRUE,
-    NP_Child,		TRUE,
-    NP_NotifyOnDeathSigTask, me,
-
-#if 1
-    NP_Input,		iofh[0],
-    NP_CloseInput,	closefh[0],
-    NP_Output,		iofh[1],
-    NP_CloseOutput,	closefh[1],
-    NP_Error,		iofh[2],
-    NP_CloseError,	closefh[2],
-#else
-    NP_Input,		IDOS->Input(),
-    NP_CloseInput,	FALSE,
-    NP_Output,		IDOS->Output(),
-    NP_CloseOutput,	FALSE,
-    NP_Error,		IDOS->ErrorOutput(),
-    NP_CloseError,	FALSE,
-#endif
-
-    NP_EntryCode, amiga_EntryCode,
-    NP_EntryData, ed,
-    NP_FinalCode,	amiga_FinalCode,
-    NP_FinalData,	fd,
-
-    NP_Name,      strdup(name),
-    cwdLock ? NP_CurrentDir : TAG_SKIP, cwdLock,
-    progdirLock ? NP_ProgramDir : TAG_SKIP, progdirLock,
-    NP_Arguments,	mergeArgs,
-    TAG_DONE
-  );
-#endif
-
-  IExec->DebugPrintF("[__uv_do_cnpa :] result : %d\n", result);
-
-	if (result < 0) { // p == 0 for CNPT
-    free(ed);
-    for(int i = 0; i < 3; i++)
-      if(closefh[i]) IDOS->Close(iofh[i]);
-		return -1;
-	}
-
-  // *pid = p->pr_ProcessID;
-
-  // wait for the entry signal from the child :
-  IExec->Wait(1 << ed->signal | SIGBREAKF_CTRL_C);
-  IExec->FreeSignal(ed->signal);
-
-  IExec->DebugPrintF("[__uv_do_cnpa :] received signal from spawnee.\n");
-
-  struct Process *p = (struct Process*)ed->me;
-  *pid = p->pr_ProcessID;
-
-  IExec->DebugPrintF("[__uv_do_cnpa :] pid : %d\n", *pid);
-
-  free(ed);
-
-  // success
-  return 0;
-#endif
+  return result > 0 ? 0 : -1;
 }
 #endif //__amigaos4__
 
@@ -1174,9 +895,6 @@ static int uv__spawn_and_init_child_fork(const uv_process_options_t* options,
 static int uv__spawn_and_init_child(
     uv_loop_t* loop,
     const uv_process_options_t* options,
-#ifdef __amigaos4__
-    const uv_process_t *process,
-#endif
     int stdio_count,
     int (*pipes)[2],
     pid_t* pid) {
@@ -1217,26 +935,15 @@ static int uv__spawn_and_init_child(
 #endif
 
 #if defined(__amigaos4__)
-
-// err = spawnvpe(options->file, options->args, 0, options->cwd, pipes[0][1], pipes[1][1], pipes[2][1]);
-// if(err > 0) *pid = err;
-// else return UV_ENOSYS;
-// return 0;
-
-
-
-
-  err = uv__do_create_new_process_amiga(loop, options, process,
+  err = uv__do_create_new_process_amiga(loop, options, // process,
                                         stdio_count,
                                         pipes,
                                         pid);
-  if(err)
-{    // switch(IDOS->IoErr()) {
-    //   case 
+  if(err) {
     printf("[uv__do_create_new_process_amiga :] Failed to create new process.\n");                    
-        return UV_ENOSYS; //UV__ERR(__translate_io_error_to_errno(IDOS->IoErr()));
-    // }
-   }   return 0;
+    return UV_ENOSYS;
+  }
+  return 0;
 #else
 
   /* This pipe is used by the parent to wait until
