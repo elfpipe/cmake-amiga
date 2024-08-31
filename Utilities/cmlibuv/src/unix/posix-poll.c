@@ -28,7 +28,6 @@
  */
 
 #ifdef __amigaos4__
-#include <proto/exec.h>
 #include <proto/dos.h>
 extern void uv__wait_children(uv_loop_t* loop);
 #endif
@@ -209,7 +208,9 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
 
 #ifdef __amigaos4__
     uint32 signals = SIGF_CHILD;
+    // printf("[uv__io_poll :] Calling waitpoll...\n");
     nfds = waitpoll(loop->poll_fds, (nfds_t)loop->poll_fds_used, timeout, &signals);
+    // printf("[uv__io_poll :] Back from waitpoll. signals == %d\n", signals);
 #else
     nfds = poll(loop->poll_fds, (nfds_t)loop->poll_fds_used, timeout);
 #endif

@@ -186,9 +186,13 @@ void cmakemainProgressCallback(const std::string& m, float prog, cmake* cm)
     dir = cmStrCat(' ', mf->GetCurrentBinaryDirectory());
   }
 
-  if ((prog < 0) || (!dir.empty())) {
+printf("[message* :] <%s>\n", m.c_str());
+
+  if ((prog < 0) || (!dir.empty())) {    
     std::cout << "-- " << m << dir << cmakemainGetStack(cm) << std::endl;
   }
+
+// std::cout << "[cout :] Buppeli-bop." << std::endl;
 }
 
 int do_cmake(int ac, char const* const* av)
@@ -1042,6 +1046,9 @@ int do_open(int ac, char const* const* av)
 
 int main(int ac, char const* const* av)
 {
+#ifdef __amigaos4__
+  enableUnixPaths();
+#endif
   cmSystemTools::EnsureStdPipes();
 
   // Replace streambuf so we can output Unicode to console

@@ -1081,11 +1081,7 @@ int uv_spawn(uv_loop_t* loop,
 #endif
 
   /* Spawn the child */
-  exec_errorno = uv__spawn_and_init_child(loop, options,
-// #ifdef __amigaos4__
-//                           process,
-// #endif
-                          stdio_count, pipes, &pid);
+  exec_errorno = uv__spawn_and_init_child(loop, options, stdio_count, pipes, &pid);
 
 #if 0
   /* This runs into a nodejs issue (it expects initialized streams, even if the
