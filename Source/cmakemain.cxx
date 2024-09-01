@@ -186,13 +186,9 @@ void cmakemainProgressCallback(const std::string& m, float prog, cmake* cm)
     dir = cmStrCat(' ', mf->GetCurrentBinaryDirectory());
   }
 
-printf("[message* :] <%s>\n", m.c_str());
-
-  if ((prog < 0) || (!dir.empty())) {    
+  if ((prog < 0) || (!dir.empty())) {
     std::cout << "-- " << m << dir << cmakemainGetStack(cm) << std::endl;
   }
-
-// std::cout << "[cout :] Buppeli-bop." << std::endl;
 }
 
 int do_cmake(int ac, char const* const* av)
