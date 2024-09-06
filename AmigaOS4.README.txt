@@ -1,0 +1,18 @@
+=== How to install :
+
+Add the following to your s:user-startup :
+
+;BEGIN CMake-3.29
+;assign home: work4.1:home
+assign cmake-amiga: work4.1:cmake-amiga
+setenv PATH /SDK/gcc/bin:/SDK/C:/SDK/local/C:/cmake-amiga/bin
+path cmake-amiga:bin ADD
+;END CMake-3.29
+
+You need to edit this to fit your system.
+
+Make sure, that there is a ".unix" file in /cmake-amiga/bin :
+
+touch cmake-amiga:bin/.unix
+
+That's it!
