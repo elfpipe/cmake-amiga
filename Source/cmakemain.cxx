@@ -199,6 +199,8 @@ int do_cmake(int ac, char const* const* av)
     return 1;
   }
 
+// cmSystemTools::Message("working dir : "+cmSystemTools::GetCurrentWorkingDirectory());
+
 #ifndef CMAKE_BOOTSTRAP
   cmDocumentation doc;
   doc.addCMakeStandardDocSections();

@@ -2591,6 +2591,9 @@ void cmSystemTools::FindCMakeResources(const char* argv0)
   } else {
     // ???
   }
+  // cmSystemTools::Message("exe : " + exe);
+  // cmSystemTools::Message("exe_dir : " + exe_dir);
+  // exit(0);
 #endif
   exe_dir = cmSystemTools::GetActualCaseForPath(exe_dir);
   cmSystemToolsCMakeCommand =

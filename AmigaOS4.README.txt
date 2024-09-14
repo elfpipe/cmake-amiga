@@ -11,8 +11,6 @@ path cmake-amiga:bin ADD
 
 You need to edit this to fit your system.
 
-Make sure, that there is a ".unix" file in /cmake-amiga/bin :
-
-touch cmake-amiga:bin/.unix
-
 That's it!
+
+NB: You no longer need the .unix file.
