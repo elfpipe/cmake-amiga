@@ -542,6 +542,8 @@ cmGlobalUnixMakefileGenerator3::GenerateBuildCommand(
   }
   makeCommand.Add(this->SelectMakeProgram(makeProgram));
 
+  // cmSystemTools::Message("makeProgram: " + this->SelectMakeProgram(makeProgram));
+
   // Explicitly tell the make tool to use the Makefile written by
   // cmLocalUnixMakefileGenerator3::WriteLocalMakefile
   makeCommand.Add("-f");

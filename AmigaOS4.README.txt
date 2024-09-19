@@ -11,6 +11,9 @@ path cmake-amiga:bin ADD
 
 You need to edit this to fit your system.
 
+You also need to copy the supplied version of clib4.library to libs:
+This is until there is a stable, public release of clib4 that supports cmake.
+
 That's it!
 
 NB: You no longer need the .unix file.
