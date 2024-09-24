@@ -43,10 +43,6 @@ enum TargetType
   UNKNOWN_LIBRARY
 };
 
-#ifdef __amigaos4__
-#undef STATIC
-#endif
-
 enum CacheEntryType
 {
   BOOL = 0,

@@ -4,10 +4,6 @@
 
 #include "cmConfigure.h" // IWYU pragma: keep
 
-#ifdef __amigaos4__
-#undef GLOBAL
-#endif
-
 class cmProperty
 {
 public:

@@ -275,10 +275,6 @@ protected:
   cmCTestTypes::TruncationMode TestOutputTruncation;
   int MaxIndex;
 
-#ifdef __amigaos4__
-#undef INTERRUPT
-#endif
-
 public:
   enum
   { // Program statuses

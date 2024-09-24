@@ -89,6 +89,11 @@ std::vector<cmDocumentationEntry> makeGeneratorDocs(
 // this is CPack.
 int main(int argc, char const* const* argv)
 {
+#ifdef __amigaos4__
+  // Enable clib4 unix paths
+  enableUnixPaths();
+#endif
+
   cmSystemTools::EnsureStdPipes();
 
   // Replace streambuf so we can output Unicode to console

@@ -12,7 +12,13 @@ path cmake-amiga:bin ADD
 You need to edit this to fit your system.
 
 You also need to copy the supplied version of clib4.library to libs:
-This is until there is a stable, public release of clib4 that supports cmake.
+This is only until there is a stable, public release of clib4 that supports cmake.
+
+And last : You need to add something like
+
+stack 4000000
+
+to your s:shell-startup
 
 That's it!
 

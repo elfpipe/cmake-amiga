@@ -1758,7 +1758,8 @@ static int kwsysProcessCreate(kwsysProcess* cp, int prIndex,
      they use setjmp/longjmp to run the child startup code in the
      parent!  TODO: OptionDetach.  Also
      TODO:  CreateProcessGroup.  */
-  cp->ForkPIDs[prIndex] = vfork();
+  cp->ForkPIDs[prIndex] = vfork();1
+#elif defined(__amigaos4__)
 #else
   cp->ForkPIDs[prIndex] = kwsysProcessFork(cp, si);
 #endif
@@ -2448,7 +2449,7 @@ static void kwsysProcessExit(void)
   _exit(0);
 }
 
-#if !defined(__VMS)
+#if !defined(__VMS) && !defined(__amigaos4__)
 static pid_t kwsysProcessFork(kwsysProcess* cp,
                               kwsysProcessCreateInformation* si)
 {
@@ -2746,6 +2747,7 @@ static int kwsysProcessesAdd(kwsysProcess* cp)
          interrupted.  */
       struct sigaction newSigAction;
       memset(&newSigAction, 0, sizeof(struct sigaction));
+#ifndef __amigaos4__
 #if KWSYSPE_USE_SIGINFO
       newSigAction.sa_sigaction = kwsysProcessesSignalHandler;
       newSigAction.sa_flags = SA_NOCLDSTOP | SA_SIGINFO;
@@ -2755,6 +2757,7 @@ static int kwsysProcessesAdd(kwsysProcess* cp)
 #else
       newSigAction.sa_handler = kwsysProcessesSignalHandler;
       newSigAction.sa_flags = SA_NOCLDSTOP;
+#endif
 #endif
       sigemptyset(&newSigAction.sa_mask);
       while ((sigaction(SIGCHLD, &newSigAction,
