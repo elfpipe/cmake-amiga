@@ -86,6 +86,10 @@ std::vector<cmDocumentationEntry> makeGeneratorDocs(
 
 } // namespace
 
+#ifdef __amigaos4__
+static const char USED min_stack[] = "$STACK:2048000";
+#endif
+
 // this is CPack.
 int main(int argc, char const* const* argv)
 {

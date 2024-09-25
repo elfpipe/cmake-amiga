@@ -14,12 +14,24 @@ You need to edit this to fit your system.
 You also need to copy the supplied version of clib4.library to libs:
 This is only until there is a stable, public release of clib4 that supports cmake.
 
-And last : You need to add something like
-
-stack 4000000
-
-to your s:shell-startup
-
 That's it!
 
 NB: You no longer need the .unix file.
+
+
+
+=== How to build :
+
+cmake \
+-DCMAKE_FIND_ROOT_PATH="/opt/adtools" \
+-DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
+-DCMAKE_SYSTEM_NAME="AmigaOS" \
+-DCMAKE_SYSTEM_PROCESSOR="PowerPC" \
+-DCMAKE_C_COMPILER="ppc-amigaos-gcc" \
+-DCMAKE_CXX_COMPILER="ppc-amigaos-g++" \
+-DCMAKE_CXX_FLAGS_INIT="-mcrt=clib4 -athread=native" \
+-DCMAKE_C_FLAGS_INIT="-mcrt=clib4 -athread=native" \
+-DUNIX=1 -DAMIGA=1 \
+-DCMAKE_INSTALL_PREFIX="/cmake-amiga" \
+..
+

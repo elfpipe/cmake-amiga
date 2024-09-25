@@ -1758,7 +1758,7 @@ static int kwsysProcessCreate(kwsysProcess* cp, int prIndex,
      they use setjmp/longjmp to run the child startup code in the
      parent!  TODO: OptionDetach.  Also
      TODO:  CreateProcessGroup.  */
-  cp->ForkPIDs[prIndex] = vfork();1
+  cp->ForkPIDs[prIndex] = vfork();
 #elif defined(__amigaos4__)
 #else
   cp->ForkPIDs[prIndex] = kwsysProcessFork(cp, si);
