@@ -1043,7 +1043,7 @@ int do_open(int ac, char const* const* av)
 } // namespace
 
 #ifdef __amigaos4__
-static const char USED min_stack[] = "$STACK:2048000";
+static const char min_stack[] = "$STACK:2048000";
 #endif
 
 int main(int ac, char const* const* av)
