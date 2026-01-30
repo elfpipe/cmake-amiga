@@ -79,7 +79,7 @@ extern char **environ;
 #endif
 #endif
 
-#ifdef CMAKE_BOOTSTRAP
+#if defined(CMAKE_BOOTSTRAP) && !defined(__amigaos4__)
 #define UV_USE_SIGCHLD
 #elif defined(UV_HAVE_KQUEUE)
 #include <sys/event.h>
@@ -1176,6 +1176,8 @@ int uv_kill(int pid, int signum) {
 void uv__process_close(uv_process_t* handle) {
   QUEUE_REMOVE(&handle->queue);
   uv__handle_stop(handle);
+#ifdef UV_USE_SIGCHLD
   if (QUEUE_EMPTY(&handle->loop->process_handles))
     uv_signal_stop(&handle->loop->child_watcher);
+#endif
 }

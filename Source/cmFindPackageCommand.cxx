@@ -416,6 +416,9 @@ bool TryGeneratedPaths(CallbackFn&& filesCollector,
   ResetGenerator(std::forward<Generator&&>(gen));
   for (auto path = gen.GetNextCandidate(startPath); !path.empty();
        path = gen.GetNextCandidate(startPath)) {
+
+        std::cout << "path: " << path << "\n";
+
     ResetGenerator(std::forward<Rest&&>(tail)...);
     if (TryGeneratedPaths(std::forward<CallbackFn&&>(filesCollector), path,
                           std::forward<Rest&&>(tail)...)) {

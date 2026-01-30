@@ -43,7 +43,7 @@
 #undef NANOSEC
 #define NANOSEC ((uint64_t) 1e9)
 
-#if defined(PTHREAD_BARRIER_SERIAL_THREAD) && !defined(__amigaos4__)
+#if defined(PTHREAD_BARRIER_SERIAL_THREAD)
 STATIC_ASSERT(sizeof(uv_barrier_t) == sizeof(pthread_barrier_t));
 #endif
 

@@ -762,7 +762,7 @@ const char* kwsysProcess_GetExceptionStringByIndex(kwsysProcess* cp, int idx)
 void kwsysProcess_Execute(kwsysProcess* cp)
 {
   int i;
-
+printf("[kwsys_Execute :] pipe() (*)\n");
   /* Do not execute a second copy simultaneously.  */
   if (!cp || cp->State == kwsysProcess_State_Executing) {
     return;

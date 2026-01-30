@@ -89,7 +89,6 @@ __archive_create_child(const char *cmd, int *child_stdin, int *child_stdout,
 		goto state_allocated;
 	if (__archive_cmdline_parse(cmdline, cmd) != ARCHIVE_OK)
 		goto state_allocated;
-
 	if (pipe(stdin_pipe) == -1)
 		goto state_allocated;
 	if (stdin_pipe[0] == 1 /* stdout */) {

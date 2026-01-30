@@ -78,10 +78,12 @@ int uv_loop_init(uv_loop_t* loop) {
   if (err)
     goto fail_platform_init;
 
+#ifndef __amigaos4__
   uv__signal_global_once_init();
   err = uv_signal_init(loop, &loop->child_watcher);
   if (err)
     goto fail_signal_init;
+#endif
 
   uv__handle_unref(&loop->child_watcher);
   loop->child_watcher.flags |= UV_HANDLE_INTERNAL;

@@ -60,6 +60,7 @@ RB_GENERATE_STATIC(uv__signal_tree_s,
                    uv_signal_s, tree_entry,
                    uv__signal_compare)
 
+#ifndef __amigaos4__
 static void uv__signal_global_reinit(void);
 
 static void uv__signal_global_init(void) {
@@ -70,16 +71,12 @@ static void uv__signal_global_init(void) {
      * it the handler functions will be called multiple times. Thus
      * we only want to do it once.
      */
-#ifdef __amigaos4__
-  do {} while(0);
-#else
     if (pthread_atfork(NULL, NULL, &uv__signal_global_reinit))
       abort();
-#endif
 
   uv__signal_global_reinit();
 }
-
+#endif
 
 void uv__signal_cleanup(void) {
   /* We can only use signal-safe functions here.
@@ -101,6 +98,7 @@ void uv__signal_cleanup(void) {
 }
 
 
+#ifndef __amigaos4__
 static void uv__signal_global_reinit(void) {
   uv__signal_cleanup();
 
@@ -115,7 +113,7 @@ static void uv__signal_global_reinit(void) {
 void uv__signal_global_once_init(void) {
   uv_once(&uv__signal_global_init_guard, uv__signal_global_init);
 }
-
+#endif
 
 static int uv__signal_lock(void) {
   int r;
@@ -268,6 +266,8 @@ static int uv__signal_loop_once_init(uv_loop_t* loop) {
   /* Return if already initialized. */
   if (loop->signal_pipefd[0] != -1)
     return 0;
+
+printf("************************SIGNAL pipe(1)***************************\n");
 
   err = uv__make_pipe(loop->signal_pipefd, UV_NONBLOCK_PIPE);
   if (err)

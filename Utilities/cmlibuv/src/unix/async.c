@@ -219,6 +219,8 @@ static int uv__async_start(uv_loop_t* loop) {
 
   uv__io_init(&loop->async_io_watcher, uv__async_io, pipefd[0]);
   uv__io_start(loop, &loop->async_io_watcher, POLLIN);
+  if(loop->async_wfd != -1)
+    uv__close(loop->async_wfd);
   loop->async_wfd = pipefd[1];
 
   return 0;
@@ -240,8 +242,9 @@ void uv__async_stop(uv_loop_t* loop) {
     return;
 
   if (loop->async_wfd != -1) {
-    if (loop->async_wfd != loop->async_io_watcher.fd)
+    if (loop->async_wfd != loop->async_io_watcher.fd) {
       uv__close(loop->async_wfd);
+    }
     loop->async_wfd = -1;
   }
 

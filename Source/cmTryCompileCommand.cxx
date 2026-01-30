@@ -93,7 +93,7 @@ bool cmTryCompileCommand(std::vector<std::string> const& args,
   // if They specified clean then we clean up what we can
   if (tc.SrcFileSignature) {
     if (!mf.GetCMakeInstance()->GetDebugTryCompile()) {
-      tc.CleanupFiles(tc.BinaryDirectory);
+      // tc.CleanupFiles(tc.BinaryDirectory);
     }
   }
   return true;
